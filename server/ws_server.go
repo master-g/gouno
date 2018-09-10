@@ -51,9 +51,9 @@ func StartWS() {
 
 	handler := cors.Default().Handler(mux)
 
-	log.Info("http server listening", zap.Int("port", config.WSPort))
+	log.Info("http server listening", zap.Int("port", config.HTTPPort))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%v", config.WSPort), handler)
+	err := http.ListenAndServe(fmt.Sprintf(":%v", config.HTTPPort), handler)
 	if err != nil {
 		log.Error("error while listen and serve http", zap.Error(err))
 		signal.RequestInterrupt()
@@ -88,7 +88,6 @@ func handleWSConnection(conn *websocket.Conn) {
 	}
 
 	sess := sessions.New(net.ParseIP(host), port, config.SocketRPMLimit)
-	sess.ClientSeq = config.ClientInitSeq
 	log.Info("new WS connection", zap.String("sess", sess.String()))
 
 	// create sender and start send loop

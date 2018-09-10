@@ -1,4 +1,4 @@
-// Copyright © 2018 Project Lop Nur <project.lopnur@gmail.com>
+// Copyright © 2018 MG <mailtomasterg@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal

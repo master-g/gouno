@@ -4,21 +4,32 @@ import "time"
 
 // Config server options
 type Config struct {
-	SocketPort             int
-	SocketReadDeadLine     time.Duration
-	SocketReadBufferSize   int
-	SocketWriteBufferSize  int
+	// HTTPort number for HTTP to listen on
+	HTTPPort int
+	// SocketReadDeadLine duration
+	SocketReadDeadLine time.Duration
+	// SocketReadBufferSize in bytes
+	SocketReadBufferSize int
+	// SocketWriteBufferSize in bytes
+	SocketWriteBufferSize int
+	// SocketSessionCacheSize size of outgoing packet queue
 	SocketSessionCacheSize int
-	SocketTxQueueLength    int
-	SocketRPMLimit         int
-	SocketGracefulTimeout  time.Duration
-	AuthTimeout            time.Duration
-	ClientInitSeq          uint64
-	WSPort                 int
-	WSAllowOrigin          bool
-	WSWriteDeadLine        time.Duration
-	WSPongTimeout          time.Duration
-	WSPingPeriod           time.Duration
+	// SocketTxQueueLength size of incoming packet queue
+	SocketTxQueueLength int
+	// SocketRPMLimit request per minute limit
+	SocketRPMLimit int
+	// SocketGracefulTimeout seconds to wait for a connection close
+	SocketGracefulTimeout time.Duration
+	// AuthTimeout timeout duration before authentication
+	AuthTimeout time.Duration
+	// WSAllowOrigin allow origin
+	WSAllowOrigin bool
+	// WSWriteDeadLine websocket write timeout
+	WSWriteDeadLine time.Duration
+	// WSPongTimeout websocket pong timeout
+	WSPongTimeout time.Duration
+	// WSPingPeriod websocket ping interval
+	WSPingPeriod time.Duration
 }
 
 var config *Config

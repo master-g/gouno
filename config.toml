@@ -22,6 +22,9 @@ addr = "localhost:9000"
 # which port should listen for http connection
 port = 9009
 
+# auth timeout, in seconds
+auth-timeout = 30
+
 # read timeout duration, in seconds
 read-timeout = 180
 
