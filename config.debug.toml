@@ -1,0 +1,91 @@
+# ------------------------------------------------------------------------------
+# Global flags
+# ------------------------------------------------------------------------------
+
+# debug flag
+debug = true
+
+# ------------------------------------------------------------------------------
+# profile configuration
+# ------------------------------------------------------------------------------
+[profile]
+
+on = true
+
+addr = "localhost:9000"
+
+# ------------------------------------------------------------------------------
+# websocket configuration
+# ------------------------------------------------------------------------------
+[ws]
+
+# which port should listen for http connection
+port = 9009
+
+# read timeout duration, in seconds
+read-timeout = 180
+
+# read buffer size, in bytes
+read-buffer-size = 32768
+
+# write buffer size, in bytes
+write-buffer-size = 32768
+
+# send cache size per session, in bytes
+session-cache-size = 32768
+
+# pending packet queue size
+pending-queue-size = 128
+
+# request per minute limit
+rpm-limit = 60
+
+# graceful timeout before closing a connection, in seconds
+graceful-timeout = 1
+
+# allow origin
+allow-origin = true
+
+# time allowed to write a message to the peer, in seconds
+write-timeout = 10
+
+# time allowed to read the next pong message from the peer, in seconds
+pong-timeout = 60
+
+# send pings to peer with this period. Must be less than pong-timeout, in seconds
+ping-period = 54
+
+# ------------------------------------------------------------------------------
+# logging configuration
+# ------------------------------------------------------------------------------
+[log]
+
+# the file to write logs to.  Backup log files will be retained
+# in the same directory.  It uses <processname>-lumberjack.log in
+# os.TempDir() if empty.
+filename = "gouno.log"
+
+# the maximum size in megabytes of the log file before it gets
+# rotated. It defaults to 100 megabytes.
+max-size = 128
+
+# the maximum number of days to retain old log files based on the
+# timestamp encoded in their filename.  Note that a day is defined as 24
+# hours and may not exactly correspond to calendar days due to daylight
+# savings, leap seconds, etc. The default is not to remove old log files
+# based on age.
+max-age = 7
+
+# the maximum number of old log files to retain.  The default
+# is to retain all old log files (though MaxAge may still cause them to get
+# deleted.)
+max-backups = 3
+
+# localtime determines if the time used for formatting the timestamps in
+# backup files is the computer's local time.  The default is to use UTC
+# time.
+localtime = true
+
+# compress determines if the rotated log files should be compressed
+# using gzip.
+compress = true
