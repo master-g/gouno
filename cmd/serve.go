@@ -24,9 +24,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lopnur/lnlog"
 	"github.com/master-g/gouno/api"
 	"github.com/master-g/gouno/config"
+	"github.com/master-g/gouno/lnlog"
 	"github.com/master-g/gouno/router"
 	"github.com/master-g/gouno/server"
 	"github.com/master-g/gouno/sessions"
