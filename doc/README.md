@@ -1,13 +1,15 @@
 GOUNO
-===
+=====
 
-## Gameplay
+GamePlay
+--------
 
 WIP
 
-## Data
+Data
+----
 
-### Card
+### Card ###
 
 we use int16 to represent a card in uno game.  
 

@@ -23,6 +23,8 @@ package api
 import (
 	"errors"
 
+	"github.com/master-g/gouno/lntime"
+
 	"github.com/master-g/gouno/crypto"
 
 	"github.com/golang/protobuf/proto"
@@ -63,6 +65,8 @@ var handshakeHandler = &router.Handler{
 				prevSession.Push <- prevSession.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), int32(pb.KickReason_KICK_LOGIN_ELSEWHERE), "")
 				prevSession.SetFlagKicked()
 				// update session
+				s.Token = newToken
+				s.LastLogin = lntime.Timestamp()
 				registry.Registry.Store(s.UID, s)
 			} else {
 				status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
@@ -72,7 +76,24 @@ var handshakeHandler = &router.Handler{
 		}
 
 		registry.Registry.Store(header.Uid, s)
-		return nil, int32(pb.StatusCode_STATUS_OK), nil
+		s.SetFlagAuth()
+
+		body := &pb.S2CHandshakeRsp{
+			Token: s.Token,
+		}
+
+		resp, err = proto.Marshal(body)
+		if err != nil {
+			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			return
+		}
+		status = int32(pb.StatusCode_STATUS_OK)
+
+		// start game frame loop
+		s.Stream = make(chan []byte)
+		go s.FetchLoop()
+
+		return
 	},
 }
 
