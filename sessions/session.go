@@ -182,6 +182,7 @@ func (s *Session) String() string {
 // FetchLoop fetches streams from game service
 func (s *Session) FetchLoop() {
 	for {
+		// FIXME: this will block the loop
 		in := <-s.Stream
 
 		select {
