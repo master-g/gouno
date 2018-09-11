@@ -75,29 +75,6 @@ message S2CHeader {
     bytes   body      = 6; // response protobuf marshaled
 }
 
-// Account message
-message Account {
-    fixed64    uid         = 1; // unique identity, internal use only
-    uint64     status      = 2; // account status
-    UserBasic  basic       = 3; // user basic information
-    ClientInfo client_info = 4; // client information
-    SecureInfo secure_info = 5; // secure information
-}
-
-// Basic info
-message UserBasic {
-    uint64  id          = 1;  // user id for display
-    string  email       = 2;  // email address
-    string  nickname    = 3;  // name
-    string  avatar      = 4;  // avatar url
-    fixed64 birthday    = 5;  // EPOCH
-    string  country     = 6;  // country / region
-    Gender  gender      = 7;  // gender
-    fixed64 last_login  = 8;  // last login timestamp
-    int32   login_count = 9;  // login count
-    fixed64 since       = 10; // register timestamp
-}
-
 // Client info
 message ClientInfo {
     int32   device_type = 1; // last login device type
@@ -110,31 +87,19 @@ message ClientInfo {
     int32   mcc         = 8; // mcc code
 }
 
-message SecureInfo {
-    string login_ip       = 1; // last login ip address
-    bool   email_verified = 2; // is email verified
-    string phone          = 3; // user phone number
-    bool   phone_verified = 4; // is user phone number verified
-    string secret         = 5; // bcrypt hashed password
-    string token          = 6; // token
-}
-
 //-----------------------------------------------------------------------------
 // Agent
 
 // Handshake request
 // C->S
 message C2SHandshakeReq {
-    bytes  send_seed = 1; // public key for server to encrypt sending data
-    bytes  recv_seed = 2; // public key for server to decrypt receive data
-    string token     = 3; // token retrieved during HTTP login phase
+    string udid = 1; // user device unique id
 }
 
 // Handshake response
 // S->C
 message S2CHandshakeRsp {
-    bytes send_seed = 1; // public key for client to encrypt sending data
-    bytes recv_seed = 2; // public key for client to decrypt receive data
+    string token = 1; // token
 }
 
 enum KickReason {

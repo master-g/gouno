@@ -21,7 +21,13 @@
 package api
 
 import (
+	"crypto/sha256"
+	"errors"
+	"github.com/master-g/gouno/crypto"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/proto/pb"
+	"github.com/master-g/gouno/registry"
 	"github.com/master-g/gouno/router"
 	"github.com/master-g/gouno/sessions"
 )
@@ -36,7 +42,27 @@ var handshakeHandler = &router.Handler{
 	RespCmd:  pb.Cmd_HANDSHAKE_RSP,
 	AuthFree: true,
 	Handler: func(s *sessions.Session, header *pb.C2SHeader) (resp []byte, status int32, err error) {
-		s.SetFlagAuth()
+		// parse request body
+		req := &pb.C2SHandshakeReq{}
+		err = proto.Unmarshal(header.Body, req)
+		if err != nil {
+			status = int32(pb.StatusCode_STATUS_INVALID)
+			s.SetFlagKicked()
+			return
+		}
+		// kick previous session
+		if prev, ok := registry.Registry.Load(header.Uid); ok {
+			if prevSession, ok := prev.(*sessions.Session); ok {
+				newToken := crypto.GenToken(req.Udid)
+				if newToken != 
+			} else {
+				status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+				err = errors.New("unable to convert session from registry")
+				return
+			}
+		}
+
+		registry.Registry.Store(header.Uid, s)
 		return nil, int32(pb.StatusCode_STATUS_OK), nil
 	},
 }
