@@ -21,8 +21,8 @@
 package api
 
 import (
-	"crypto/sha256"
 	"errors"
+
 	"github.com/master-g/gouno/crypto"
 
 	"github.com/golang/protobuf/proto"
@@ -54,7 +54,16 @@ var handshakeHandler = &router.Handler{
 		if prev, ok := registry.Registry.Load(header.Uid); ok {
 			if prevSession, ok := prev.(*sessions.Session); ok {
 				newToken := crypto.GenToken(req.Udid)
-				if newToken != 
+				if newToken != s.Token {
+					status = int32(pb.StatusCode_STATUS_INVALID)
+					err = errors.New("invalid token")
+					return
+				}
+				// kick prev session
+				prevSession.Push <- prevSession.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), int32(pb.KickReason_KICK_LOGIN_ELSEWHERE), "")
+				prevSession.SetFlagKicked()
+				// update session
+				registry.Registry.Store(s.UID, s)
 			} else {
 				status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
 				err = errors.New("unable to convert session from registry")
