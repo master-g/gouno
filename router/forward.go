@@ -27,6 +27,7 @@ import (
 
 // forward message to game service
 func forward(s *sessions.Session, header *pb.C2SHeader) error {
+	// change Body to C2SHeader, import common in internal.proto
 	frame := pb.Frame{
 		Type: pb.FrameType_Message,
 		Cmd:  header.Cmd,

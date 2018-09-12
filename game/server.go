@@ -23,7 +23,9 @@ package game
 import "github.com/master-g/gouno/signal"
 
 var (
-	Register   chan *Client
+	// Register channel for register client to game server
+	Register chan *Client
+	// Unregister channel for unregister client from game server
 	Unregister chan uint64
 
 	clients map[uint64]*Client
@@ -33,6 +35,7 @@ func init() {
 	clients = make(map[uint64]*Client)
 }
 
+// Start game server
 func Start() {
 	Register = make(chan *Client)
 	Unregister = make(chan uint64)
@@ -45,9 +48,13 @@ func Start() {
 	for {
 		select {
 		case client := <-Register:
+			// TODO: check if client already exists, if so, update in,out channel, remove AI .,etc
 			clients[client.UID] = client
+			// TODO: go clientLogic(client)
 		case uid := <-Unregister:
-			delete(clients, uid)
+			if _, ok := clients[uid]; ok {
+				// TODO: set offline flag here, remove client when game is not start yet or is already over
+			}
 		case <-signal.InterruptChan:
 			return
 		}

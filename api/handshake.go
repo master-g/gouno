@@ -23,6 +23,8 @@ package api
 import (
 	"errors"
 
+	"github.com/master-g/gouno/game"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/crypto"
 	"github.com/master-g/gouno/lntime"
@@ -87,7 +89,8 @@ var handshakeHandler = &router.Handler{
 		}
 		status = int32(pb.StatusCode_STATUS_OK)
 
-		// TODO: add session to game
+		// register client to game server
+		game.Register <- game.NewClient(s.UID, s.ToGame, s.FromGame)
 
 		return
 	},

@@ -96,9 +96,6 @@ func (buf *Sender) SendLoop() {
 		case data := <-buf.pending: // dequeue data for sending
 			buf.actualSend(data)
 		case <-buf.ctrl: // control signal received
-			// TODO
-			// 1. how can we send last packet before close
-			// 2. only send reason packet before close
 			return
 		}
 	}

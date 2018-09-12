@@ -24,9 +24,14 @@ import "github.com/master-g/gouno/proto/pb"
 
 // Client holds client's uid and channels for communicate
 type Client struct {
+	// UID user unique ID
 	UID uint64
-	In  chan pb.Frame
+	// In channel for receiving frames from client
+	In chan pb.Frame
+	// Out channel for sending frames to client
 	Out chan pb.Frame
+	// TID table ID, 0 for no table
+	TID uint64
 }
 
 // NewClient returns a client pointer
