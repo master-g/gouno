@@ -18,25 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package router
+package game
 
-import (
-	"github.com/master-g/gouno/proto/pb"
-	"github.com/master-g/gouno/sessions"
+import "github.com/master-g/gouno/signal"
+
+var (
+	Register   chan *Client
+	Unregister chan uint64
+
+	clients map[uint64]*Client
 )
 
-// forward message to game service
-func forward(s *sessions.Session, header *pb.C2SHeader) error {
-	frame := pb.Frame{
-		Type: pb.FrameType_Message,
-		Cmd:  header.Cmd,
-		Body: header.Body,
-	}
+func init() {
+	clients = make(map[uint64]*Client)
+}
 
-	select {
-	case s.ToGame <- frame:
-		return nil
-	default:
-		return ErrorStreamNotOpen
+func Start() {
+	Register = make(chan *Client)
+	Unregister = make(chan uint64)
+
+	defer func() {
+		close(Register)
+		close(Unregister)
+	}()
+
+	for {
+		select {
+		case client := <-Register:
+			clients[client.UID] = client
+		case uid := <-Unregister:
+			delete(clients, uid)
+		case <-signal.InterruptChan:
+			return
+		}
 	}
 }

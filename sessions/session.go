@@ -55,13 +55,12 @@ type Session struct {
 	flag              Flag          // Session flag
 	IP                net.IP        // Client IP address
 	Port              string        // Client Port
-	MQ                chan []byte   // Channel of async messages send back to client
+	FromGame          chan pb.Frame // Channel of async messages send back to client
+	ToGame            chan pb.Frame // Channel of async messages send from client to game
 	Encoder           *rc4.Cipher   // Encrypt
 	Decoder           *rc4.Cipher   // Decrypt
 	ClientSeq         uint64        // incoming packet sequence
 	ServerSeq         uint64        // outgoing sequence
-	GameServiceID     string        // Game service ID
-	Stream            chan []byte   // Data stream send to game server
 	Push              chan []byte   // Push channel for internal communication
 	ConnectTime       time.Time     // Timestamp of TCP connection established
 	LastPacketTime    time.Time     // Timestamp of last packet arrived
@@ -177,21 +176,6 @@ func (s *Session) CheckRPMLimitViolation() bool {
 // String interface
 func (s *Session) String() string {
 	return fmt.Sprintf("uid:%v, addr:%v:%v, flag:%v, token:%v, seq:%v(c), %v(s)", s.UID, s.IP.String(), s.Port, s.flag, s.Token, s.ClientSeq, s.ServerSeq)
-}
-
-// FetchLoop fetches streams from game service
-func (s *Session) FetchLoop() {
-	for {
-		// FIXME: this will block the loop
-		in := <-s.Stream
-
-		select {
-		case s.MQ <- in:
-		case <-s.Die:
-			log.Info("connection closed by logic, stop streaming", zap.String("sess", s.String()))
-			return
-		}
-	}
 }
 
 // marshalHeader assemble response message into a S2CHeader and return its marshaled data

@@ -88,7 +88,12 @@ func Route(s *sessions.Session, pkg []byte) (resp []byte) {
 	var ok bool
 	if cmd > pb.Cmd_CMD_COMMON_END {
 		// forward message
-		// TODO: feed to game server logic
+		if err = forward(s, header); err != nil {
+			// error while forwarding
+			log.Error("error while forwarding cmd", zap.String("cmd", cmd.String()), zap.Error(err))
+			s.SetFlagKicked()
+			return nil
+		}
 	} else {
 		// route
 		if h, ok = handlerMap[cmd]; ok {

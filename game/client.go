@@ -18,25 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package router
+package game
 
-import (
-	"github.com/master-g/gouno/proto/pb"
-	"github.com/master-g/gouno/sessions"
-)
+import "github.com/master-g/gouno/proto/pb"
 
-// forward message to game service
-func forward(s *sessions.Session, header *pb.C2SHeader) error {
-	frame := pb.Frame{
-		Type: pb.FrameType_Message,
-		Cmd:  header.Cmd,
-		Body: header.Body,
-	}
+// Client holds client's uid and channels for communicate
+type Client struct {
+	UID uint64
+	In  chan pb.Frame
+	Out chan pb.Frame
+}
 
-	select {
-	case s.ToGame <- frame:
-		return nil
-	default:
-		return ErrorStreamNotOpen
+// NewClient returns a client pointer
+func NewClient(uid uint64, in, out chan pb.Frame) *Client {
+	return &Client{
+		UID: uid,
+		In:  in,
+		Out: out,
 	}
 }

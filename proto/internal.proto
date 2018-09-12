@@ -1,0 +1,17 @@
+syntax = "proto3";
+package proto.internal;
+option go_package = "github.com/master-g/gouno/proto/pb";
+
+enum FrameType {
+    Message = 0;
+    Kick    = 1;
+    Ping    = 2;
+}
+
+message Frame {
+    FrameType type    = 1;
+    int32     cmd     = 2;
+    int32     status  = 3;
+    string    message = 4;
+    bytes     body    = 5;
+}

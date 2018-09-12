@@ -23,11 +23,9 @@ package api
 import (
 	"errors"
 
-	"github.com/master-g/gouno/lntime"
-
-	"github.com/master-g/gouno/crypto"
-
 	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/crypto"
+	"github.com/master-g/gouno/lntime"
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/registry"
 	"github.com/master-g/gouno/router"
@@ -89,9 +87,7 @@ var handshakeHandler = &router.Handler{
 		}
 		status = int32(pb.StatusCode_STATUS_OK)
 
-		// start game frame loop
-		s.Stream = make(chan []byte)
-		go s.FetchLoop()
+		// TODO: add session to game
 
 		return
 	},

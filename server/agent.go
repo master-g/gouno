@@ -42,7 +42,8 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	defer wg.Done()
 
 	// init session
-	s.MQ = make(chan []byte, defaultMQSize)
+	s.FromGame = make(chan pb.Frame, defaultMQSize)
+	s.ToGame = make(chan pb.Frame, defaultMQSize)
 	s.Push = make(chan []byte, defaultPushQueueSize)
 	s.ConnectTime = time.Now()
 	s.LastPacketTime = time.Now()
@@ -57,7 +58,9 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	defer func() {
 		// notify handleTCPConnection()
 		close(s.Die)
-		close(s.Stream)
+		close(s.ToGame)
+		close(s.FromGame)
+		close(s.Push)
 	}()
 
 	// **** MAIN MESSAGE LOOP ****
@@ -92,9 +95,21 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 		case msg := <-s.Push:
 			// internal push
 			sendPacket(s, out, msg)
-		case frame := <-s.MQ:
+		case frame := <-s.FromGame:
 			// packets from game service frame
-			sendPacket(s, out, frame)
+			switch frame.Type {
+			case pb.FrameType_Message:
+				var data []byte
+				if frame.Status != int32(pb.StatusCode_STATUS_OK) {
+					data = s.ErrorResponse(frame.Cmd, frame.Status, frame.Message)
+				} else {
+					data = s.Response(frame.Cmd, frame.Body)
+				}
+				sendPacket(s, out, data)
+			case pb.FrameType_Kick:
+				sendPacket(s, out, s.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), frame.Status, frame.Message))
+				s.SetFlagKicked()
+			}
 		case <-authTimer.C:
 			authTimer.Stop()
 			// auth timeout
