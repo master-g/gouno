@@ -20,25 +20,67 @@
 
 package game
 
-import "github.com/master-g/gouno/proto/pb"
+import (
+	"fmt"
+
+	"github.com/master-g/gouno/proto/pb"
+)
+
+// Flag client status
+type Flag uint32
+
+const (
+	// FlagWait indicates the client is waiting for a table
+	FlagWait = 0x1
+	// FlagOffline indicates the client is disconnected, shall be remove after the game is over
+	FlagOffline = 0x2
+)
 
 // Client holds client's uid and channels for communicate
 type Client struct {
 	// UID user unique ID
 	UID uint64
-	// In channel for receiving frames from client
+	// In channel for receiving frames from session in agent
 	In chan pb.Frame
-	// Out channel for sending frames to client
+	// Out channel for sending frames to session in agent
 	Out chan pb.Frame
 	// TID table ID, 0 for no table
 	TID uint64
+	// client status flag
+	flag Flag
 }
 
-// NewClient returns a client pointer
-func NewClient(uid uint64, in, out chan pb.Frame) *Client {
-	return &Client{
-		UID: uid,
-		In:  in,
-		Out: out,
-	}
+// String interface
+func (c *Client) String() string {
+	return fmt.Sprintf("uid: %v, flag: %v", c.UID, c.flag)
+}
+
+// IsFlagWaitSet returns true if the FlagWait is set
+func (c Client) IsFlagWaitSet() bool {
+	return c.flag&FlagWait != 0
+}
+
+// ClearFlagWait clears the FlagWait bit
+func (c *Client) ClearFlagWait() {
+	c.flag &^= FlagWait
+}
+
+// SetFlagWait sets the FlagWait bit
+func (c *Client) SetFlagWait() {
+	c.flag |= FlagWait
+}
+
+// IsFlagOfflineSet returns true if the FlagOffline is set
+func (c Client) IsFlagOfflineSet() bool {
+	return c.flag&FlagOffline != 0
+}
+
+// ClearFlagOffline clears the FlagOffline bit
+func (c *Client) ClearFlagOffline() {
+	c.flag &^= FlagOffline
+}
+
+// SetFlagOffline sets the FlagOffline bit
+func (c *Client) SetFlagOffline() {
+	c.flag |= FlagOffline
 }

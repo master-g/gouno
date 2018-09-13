@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/master-g/gouno/game"
+
 	"github.com/master-g/gouno/api"
 	"github.com/master-g/gouno/config"
 	"github.com/master-g/gouno/lnlog"
@@ -103,6 +105,7 @@ func startService() {
 	log := lnlog.NewLogger("MAIN")
 	defer log.Sync()
 	api.UseLogger(lnlog.NewLogger("API"))
+	game.UseLogger(lnlog.NewLogger("GAME"))
 	router.UseLogger(lnlog.NewLogger("ROUTER"))
 	server.UseLogger(lnlog.NewLogger("SERVER"))
 	sessions.UseLogger(lnlog.NewLogger("SESSIONS"))
@@ -133,11 +136,17 @@ func startService() {
 	// start ws server
 	go server.StartWS()
 
+	// start game server
+	go game.Start()
+
 	// capture system signal
 	go signal.Start()
 
 	// wait for exit
 	<-signal.InterruptChan
+
+	// wait for game server to shutdown
+	game.WaitGameServerShutdown()
 
 	// wait for server to shutdown
 	server.WaitSocketShutdown()

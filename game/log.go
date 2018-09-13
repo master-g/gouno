@@ -18,26 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package router
+package game
 
-import (
-	"github.com/master-g/gouno/proto/pb"
-	"github.com/master-g/gouno/sessions"
-)
+import "go.uber.org/zap"
 
-// forward message to game service
-func forward(s *sessions.Session, header *pb.C2SHeader) error {
-	if s.Client == nil {
-		return ErrorStreamNotOpen
-	}
+var log *zap.Logger
 
-	// change Body to C2SHeader, import common in internal.proto
-	frame := pb.Frame{
-		Type:   pb.FrameType_Message,
-		Cmd:    header.Cmd,
-		Header: header,
-	}
+func init() {
+	log = zap.NewNop()
+}
 
-	s.Client.In <- frame
-	return nil
+// UseLogger set logger for this sub-system
+func UseLogger(l *zap.Logger) {
+	log = l
 }

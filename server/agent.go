@@ -42,8 +42,6 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	defer wg.Done()
 
 	// init session
-	s.FromGame = make(chan pb.Frame, defaultMQSize)
-	s.ToGame = make(chan pb.Frame, defaultMQSize)
 	s.Push = make(chan []byte, defaultPushQueueSize)
 	s.ConnectTime = time.Now()
 	s.LastPacketTime = time.Now()
@@ -58,8 +56,6 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	defer func() {
 		// notify handleTCPConnection()
 		close(s.Die)
-		close(s.ToGame)
-		close(s.FromGame)
 		close(s.Push)
 	}()
 

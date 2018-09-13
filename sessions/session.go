@@ -26,6 +26,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/master-g/gouno/game"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/lntime"
 	"github.com/master-g/gouno/proto/pb"
@@ -55,8 +57,7 @@ type Session struct {
 	flag              Flag          // Session flag
 	IP                net.IP        // Client IP address
 	Port              string        // Client Port
-	FromGame          chan pb.Frame // Channel of async messages send back to client
-	ToGame            chan pb.Frame // Channel of async messages send from client to game
+	Client            *game.Client  // Client in game server
 	Encoder           *rc4.Cipher   // Encrypt
 	Decoder           *rc4.Cipher   // Decrypt
 	ClientSeq         uint64        // incoming packet sequence

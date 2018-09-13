@@ -90,7 +90,12 @@ var handshakeHandler = &router.Handler{
 		status = int32(pb.StatusCode_STATUS_OK)
 
 		// register client to game server
-		game.Register <- game.NewClient(s.UID, s.ToGame, s.FromGame)
+		registerReq := &game.RegisterRequest{
+			UID:         header.Uid,
+			ClientEntry: make(chan *game.Client),
+		}
+		game.Register <- registerReq
+		s.Client = <-registerReq.ClientEntry
 
 		return
 	},

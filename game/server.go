@@ -20,24 +20,35 @@
 
 package game
 
-import "github.com/master-g/gouno/signal"
+import (
+	"sync"
+
+	"github.com/master-g/gouno/proto/pb"
+	"github.com/master-g/gouno/signal"
+	"go.uber.org/zap"
+)
 
 var (
 	// Register channel for register client to game server
-	Register chan *Client
+	Register chan *RegisterRequest
 	// Unregister channel for unregister client from game server
 	Unregister chan uint64
 
-	clients map[uint64]*Client
+	clients sync.Map
+	wg      sync.WaitGroup
 )
 
-func init() {
-	clients = make(map[uint64]*Client)
+// RegisterRequest ...
+type RegisterRequest struct {
+	// UID user unique ID
+	UID uint64
+	// ClientEntry to receive client instance
+	ClientEntry chan *Client
 }
 
 // Start game server
 func Start() {
-	Register = make(chan *Client)
+	Register = make(chan *RegisterRequest)
 	Unregister = make(chan uint64)
 
 	defer func() {
@@ -47,15 +58,67 @@ func Start() {
 
 	for {
 		select {
-		case client := <-Register:
-			// TODO: check if client already exists, if so, update in,out channel, remove AI .,etc
-			clients[client.UID] = client
-			// TODO: go clientLogic(client)
+		case req := <-Register:
+			if prev, ok := clients.Load(req.UID); ok {
+				prevClient, ok := prev.(*Client)
+				if ok {
+					// clear offline flag to disable AI .,etc
+					prevClient.ClearFlagOffline()
+					req.ClientEntry <- prevClient
+				} else {
+					log.Error("unable to convert *client")
+				}
+			} else {
+				// no previous client, start new goroutine
+				wg.Add(1)
+				go clientLoop(req)
+			}
 		case uid := <-Unregister:
-			if _, ok := clients[uid]; ok {
-				// TODO: set offline flag here, remove client when game is not start yet or is already over
+			if v, ok := clients.Load(uid); ok {
+				// set offline flag, the real removal will be done in another goroutine
+				client, ok := v.(*Client)
+				if !ok {
+					log.Error("unable to convert *client")
+				} else {
+					client.SetFlagOffline()
+				}
 			}
 		case <-signal.InterruptChan:
+			log.Info("shutting down game server")
+			return
+		}
+	}
+}
+
+// WaitGameServerShutdown waits for game server to shutdown
+func WaitGameServerShutdown() {
+	wg.Wait()
+}
+
+func clientLoop(req *RegisterRequest) {
+	client := &Client{
+		UID: req.UID,
+		In:  make(chan pb.Frame),
+		Out: make(chan pb.Frame),
+	}
+
+	defer func() {
+		clients.Delete(req.UID)
+		close(client.In)
+		close(client.Out)
+		wg.Done()
+	}()
+
+	req.ClientEntry <- client
+
+	for {
+		select {
+		case frame := <-client.In:
+			log.Info(frame.Message)
+		}
+		if client.IsFlagOfflineSet() && client.IsFlagWaitSet() {
+			// client logic terminate
+			log.Info("client loop terminated", zap.String("client", client.String()))
 			return
 		}
 	}
