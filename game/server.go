@@ -44,6 +44,8 @@ type RegisterRequest struct {
 	UID uint64
 	// ClientEntry to receive client instance
 	ClientEntry chan *Client
+	// In channel for client to receive packets
+	In chan pb.Frame
 }
 
 // Start game server
@@ -64,6 +66,7 @@ func Start() {
 				if ok {
 					// clear offline flag to disable AI .,etc
 					prevClient.ClearFlagOffline()
+					prevClient.In = req.In
 					req.ClientEntry <- prevClient
 				} else {
 					log.Error("unable to convert *client")
@@ -98,13 +101,12 @@ func WaitGameServerShutdown() {
 func clientLoop(req *RegisterRequest) {
 	client := &Client{
 		UID: req.UID,
-		In:  make(chan pb.Frame),
+		In:  req.In,
 		Out: make(chan pb.Frame),
 	}
 
 	defer func() {
 		clients.Delete(req.UID)
-		close(client.In)
 		close(client.Out)
 		wg.Done()
 	}()

@@ -43,6 +43,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 
 	// init session
 	s.Push = make(chan []byte, defaultPushQueueSize)
+	s.MQ = make(chan pb.Frame, defaultMQSize)
 	s.ConnectTime = time.Now()
 	s.LastPacketTime = time.Now()
 	// auth timeout
@@ -55,6 +56,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	// cleanup
 	defer func() {
 		// notify handleTCPConnection()
+		close(s.MQ)
 		close(s.Die)
 		close(s.Push)
 	}()
@@ -91,7 +93,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 		case msg := <-s.Push:
 			// internal push
 			sendPacket(s, out, msg)
-		case frame := <-s.FromGame:
+		case frame := <-s.MQ:
 			// packets from game service frame
 			switch frame.Type {
 			case pb.FrameType_Message:
@@ -99,7 +101,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 				if frame.Status != int32(pb.StatusCode_STATUS_OK) {
 					data = s.ErrorResponse(frame.Cmd, frame.Status, frame.Message)
 				} else {
-					data = s.Response(frame.Cmd, frame.Body)
+					data = s.Response(frame.Cmd, frame.Header.Body)
 				}
 				sendPacket(s, out, data)
 			case pb.FrameType_Kick:
