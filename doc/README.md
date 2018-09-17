@@ -14,27 +14,22 @@ Data
 we use int16 to represent a card in uno game.  
 
 ```plain
-| reserved | category | color | value |
+| type | reserved | color | value |
+| t r c c v v v v |
 
-category:
-001 - standard
-010 - function
-100 - wild
+00 standard
+10 wild cards
 
-color:
-0001 - red
-0010 - yellow
-0100 - blue
-1000 - green
-0000 - black (wild)
+00 red
+01 yellow
+10 blue
+11 green
 
-value:
-0000~0101 - digit 0~9
-
-0000 - skip
-0010 - reverse
-0100 - draw 2
-
-0000 - wild
-0001 - wild draw 4
+0000 0 
+1001 9
+1010 skip
+1011 reverse
+1100 draw 2
+1101 wild
+1110 wild draw 4
 ```
