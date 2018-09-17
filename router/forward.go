@@ -38,6 +38,11 @@ func forward(s *sessions.Session, header *pb.C2SHeader) error {
 		Header: header,
 	}
 
-	s.Client.In <- frame
+	select {
+	case s.Client.In <- frame:
+	case <-s.Client.Die:
+		s.Client = nil
+	}
+
 	return nil
 }

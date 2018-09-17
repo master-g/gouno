@@ -23,9 +23,10 @@ package game
 import (
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/signal"
-	"go.uber.org/zap"
 )
 
 var (
@@ -44,8 +45,6 @@ type RegisterRequest struct {
 	UID uint64
 	// ClientEntry to receive client instance
 	ClientEntry chan *Client
-	// In channel for client to receive packets
-	In chan pb.Frame
 }
 
 // Start game server
@@ -58,15 +57,16 @@ func Start() {
 		close(Unregister)
 	}()
 
+	// register game CMD handler
+	registerAllHandlers()
+
 	for {
 		select {
 		case req := <-Register:
 			if prev, ok := clients.Load(req.UID); ok {
 				prevClient, ok := prev.(*Client)
 				if ok {
-					// clear offline flag to disable AI .,etc
-					prevClient.ClearFlagOffline()
-					prevClient.In = req.In
+					log.Info("prev client found", zap.String("client", prevClient.String()))
 					req.ClientEntry <- prevClient
 				} else {
 					log.Error("unable to convert *client")
@@ -101,12 +101,17 @@ func WaitGameServerShutdown() {
 func clientLoop(req *RegisterRequest) {
 	client := &Client{
 		UID: req.UID,
-		In:  req.In,
+		In:  make(chan pb.Frame),
 		Out: make(chan pb.Frame),
+		Die: make(chan struct{}),
 	}
+
+	log.Info("client created for new connection", zap.Uint64("uid", req.UID))
 
 	defer func() {
 		clients.Delete(req.UID)
+		close(client.Die)
+		close(client.In)
 		close(client.Out)
 		wg.Done()
 	}()
@@ -116,11 +121,20 @@ func clientLoop(req *RegisterRequest) {
 	for {
 		select {
 		case frame := <-client.In:
-			log.Info(frame.Message)
+			route(client, frame)
+			// TODO: add this to EnterGame CMD Handler
+			// clear offline flag to disable AI .,etc
+			// prevClient.ClearFlagOffline()
+		case <-signal.InterruptChan:
+			// server shutting down, force quit
+			client.SetFlagKicked()
 		}
-		if client.IsFlagOfflineSet() && client.IsFlagWaitSet() {
-			// client logic terminate
-			log.Info("client loop terminated", zap.String("client", client.String()))
+		if client.IsFlagOfflineSet() && client.TID == 0 {
+			// client is offline, and no table related, remove
+			client.SetFlagKicked()
+		}
+
+		if client.IsFlagKickedSet() {
 			return
 		}
 	}

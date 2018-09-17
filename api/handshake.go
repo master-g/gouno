@@ -93,7 +93,6 @@ var handshakeHandler = &router.Handler{
 		registerReq := &game.RegisterRequest{
 			UID:         header.Uid,
 			ClientEntry: make(chan *game.Client),
-			In:          make(chan pb.Frame),
 		}
 		game.Register <- registerReq
 		s.Client = <-registerReq.ClientEntry

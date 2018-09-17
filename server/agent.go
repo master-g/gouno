@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/master-g/gouno/game"
+
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/registry"
 	"github.com/master-g/gouno/router"
@@ -131,6 +133,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 			if s.UID != 0 {
 				// REMOVE SESSION HERE ONLY
 				registry.Registry.Delete(s.UID)
+				game.Unregister <- s.UID
 			}
 			return
 		}

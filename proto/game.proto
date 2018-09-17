@@ -6,11 +6,13 @@ option go_package = "github.com/master-g/gouno/proto/pb";
 // S -> C : even
 // C -> S : odd
 enum GameCmd {
-    GAME_RESERVED = 0;      //
-    SYNC_TABLE    = 0x2001; // C->S request to synchronize the table
-    ACTION        = 0x2003; // C->S player take action
-    EVENT_NTY     = 0x2004; // S->C event broadcast
-    GAME_OVER     = 0x2006; // S->C game over
+    GAME_RESERVED  = 0;      //
+    ENTER_GAME_REQ = 0x2001; // C->S client request to enter a new game or resume an old one
+    ENTER_GAME_RSP = 0x2002; // S->C response to ENTER_GAME
+    ACTION_REQ     = 0x2003; // C->S player take action
+    ACTION_RSP     = 0x2004; // S->C action response
+    EVENT_NTY      = 0x2006; // S->C event broadcast
+    GAME_OVER_NTY  = 0x2008; // S->C game over
 }
 
 enum Event {
@@ -45,16 +47,16 @@ message UnoPlayer {
 }
 
 message S2CTableState {
-    fixed64     tid             = 1;  // table id
-    bool        playing         = 2;  // is game running
-    bool        clockwise       = 3;  // current direction
-    fixed64     dealer_uid      = 4;  // dealer uid
-    fixed64     last_player     = 5;  // last player
-    fixed64     current_player  = 6;  // current player
-    int32       cards_left      = 7;  // cards left in deck, can be calculated
-    TableConfig table_config    = 8;  // table config
-    repeated int32 cards_played = 9;  // cards played
-    repeated UnoPlayer players  = 10; // player list
+    fixed64     tid              = 1;  // table id
+    bool        playing          = 2;  // is game running
+    bool        clockwise        = 3;  // current direction
+    fixed64     dealer_uid       = 4;  // dealer uid
+    fixed64     last_player      = 5;  // last player
+    fixed64     current_player   = 6;  // current player
+    int32       cards_left       = 7;  // cards left in deck, can be calculated
+    TableConfig table_config     = 8;  // table config
+    repeated uint32 cards_played = 9;  // cards played
+    repeated UnoPlayer players   = 10; // player list
 }
 
 message C2SAction {
@@ -64,10 +66,10 @@ message C2SAction {
 }
 
 message S2CEventNty {
-    fixed64  uid        = 1; // player uid
-    int32    event      = 2; // action
-    int32    wild_color = 3; // player play wild and select next play color
-    repeated int32 card = 4; // cards involved
+    fixed64  uid         = 1; // player uid
+    int32    event       = 2; // action
+    int32    wild_color  = 3; // player play wild and select next play color
+    repeated uint32 card = 4; // cards involved
 }
 
 message S2CGameOverNty {

@@ -133,6 +133,9 @@ func startService() {
 		WSPingPeriod:           time.Duration(viper.GetInt("ws.ping-period")) * time.Second,
 	})
 
+	// register handlers
+	router.Register(api.Handlers)
+
 	// start ws server
 	go server.StartWS()
 
