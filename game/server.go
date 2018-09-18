@@ -23,10 +23,9 @@ package game
 import (
 	"sync"
 
-	"go.uber.org/zap"
-
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/signal"
+	"go.uber.org/zap"
 )
 
 var (
@@ -122,9 +121,6 @@ func clientLoop(req *RegisterRequest) {
 		select {
 		case frame := <-client.In:
 			route(client, frame)
-			// TODO: add this to EnterGame CMD Handler
-			// clear offline flag to disable AI .,etc
-			// prevClient.ClearFlagOffline()
 		case <-signal.InterruptChan:
 			// server shutting down, force quit
 			client.SetFlagKicked()

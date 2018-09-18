@@ -1,81 +1,71 @@
 package uno
 
 import (
+	"errors"
 	"math/bits"
+	"math/rand"
 	"sort"
 )
 
-// Card uint8 representation of a uno card
-type Card uint8
-
-// Type of uno cards
-type Type uint8
-
 // Uno card types
 const (
-	TypeStandard Type = 0x00 // 0rccvvvvb
-	TypeWild     Type = 0x80 // 1rccvvvvb
+	TypeStandard uint8 = 0x00 // 0rccvvvvb
+	TypeWild     uint8 = 0x80 // 1rccvvvvb
 )
-
-// Color of uno card
-type Color uint8
 
 // Uno card colors
 const (
-	ColorRed    Color = 0x00 // cr00vvvvb
-	ColorYellow Color = 0x10 // cr01vvvvb
-	ColorBlue   Color = 0x20 // cr10vvvvb
-	ColorGreen  Color = 0x30 // cr11vvvvb
+	ColorRed    uint8 = 0x00 // cr00vvvvb
+	ColorYellow uint8 = 0x10 // cr01vvvvb
+	ColorBlue   uint8 = 0x20 // cr10vvvvb
+	ColorGreen  uint8 = 0x30 // cr11vvvvb
 )
-
-// Value of uno card
-type Value uint8
 
 // uno card values
 const (
-	Value0         Value = 0x01
-	Value1         Value = 0x02
-	Value2         Value = 0x03
-	Value3         Value = 0x04
-	Value4         Value = 0x05
-	Value5         Value = 0x06
-	Value6         Value = 0x07
-	Value7         Value = 0x08
-	Value8         Value = 0x09
-	Value9         Value = 0x0A
-	ValueSkip      Value = 0x0B
-	ValueReverse   Value = 0x0C
-	ValueDraw2     Value = 0x0D
-	ValueWild      Value = 0x0E
-	ValueWildDraw4 Value = 0x0F
+	Value0         uint8 = 0x01
+	Value1         uint8 = 0x02
+	Value2         uint8 = 0x03
+	Value3         uint8 = 0x04
+	Value4         uint8 = 0x05
+	Value5         uint8 = 0x06
+	Value6         uint8 = 0x07
+	Value7         uint8 = 0x08
+	Value8         uint8 = 0x09
+	Value9         uint8 = 0x0A
+	ValueSkip      uint8 = 0x0B
+	ValueReverse   uint8 = 0x0C
+	ValueDraw2     uint8 = 0x0D
+	ValueWild      uint8 = 0x0E
+	ValueWildDraw4 uint8 = 0x0F
 )
 
 // CardMake make a uno card with given card type, color and value
-func CardMake(t Type, color Color, value Value) Card {
+func CardMake(t, color, value uint8) uint8 {
 	var card uint8
 	card |= uint8(t)
 	card |= uint8(color)
 	card |= uint8(value)
-	return Card(card)
+	return card
 }
 
-// Type returns the Type of the card c
-func (c Card) Type() Type {
-	return Type(c & 0x80)
+// CardType returns the type of the card c
+func CardType(c uint8) uint8 {
+	return c & 0x80
 }
 
-// Color returns the color of the card c
-func (c Card) Color() Color {
-	return Color(c & 0x70)
+// CardColor returns the color of the card c
+func CardColor(c uint8) uint8 {
+	return c & 0x70
 }
 
-// Value returns the value of the card c
-func (c Card) Value() Value {
-	return Value(c & 0x0F)
+// CardValue returns the value of the card c
+func CardValue(c uint8) uint8 {
+	return c & 0x0F
 }
 
 var (
-	cardPreset = []Card{
+	cardPreset = []uint8{
 		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, // red, 0~9, skip, reverse, draw 2
 		0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, // yellow
 		0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, // blue
@@ -87,29 +77,107 @@ var (
 		0x4D, 0x4D, 0x4D, 0x4D, // wild
 		0x4E, 0x4E, 0x4E, 0x4E, // wild draw 4
 	}
+
+	value2str = map[uint8]string{
+		Value0:         "0",
+		Value1:         "1",
+		Value2:         "2",
+		Value3:         "3",
+		Value4:         "4",
+		Value5:         "5",
+		Value6:         "6",
+		Value7:         "7",
+		Value8:         "8",
+		Value9:         "9",
+		ValueSkip:      "s",
+		ValueReverse:   "r",
+		ValueDraw2:     "d2",
+		ValueWild:      "w",
+		ValueWildDraw4: "d4",
+	}
+
+	color2str = map[uint8]string{
+		ColorRed:    "r",
+		ColorYellow: "y",
+		ColorBlue:   "b",
+		ColorGreen:  "g",
+	}
 )
 
-func (c Card) String() string {
-	return ""
+func CardToString(c uint8) string {
+	if CardType(c) == TypeWild {
+		return "w" + value2str[CardValue(c)]
+	}
+	return color2str[CardColor(c)] + value2str[CardValue(c)]
 }
 
 // SortCards sorts uno cards by type and value
-func SortCards(cards []Card) {
+func SortCards(cards []uint8) {
 	sort.Slice(cards, func(i, j int) bool {
-		return bits.RotateLeft8(uint8(cards[i]), 4) < bits.RotateLeft8(uint8(cards[j]), 4)
+		return bits.RotateLeft8(cards[i], 4) < bits.RotateLeft8(cards[j], 4)
 	})
 }
 
+var (
+	// ErrorNoEnoughCards indicates there are no enough cards left
+	ErrorNoEnoughCards = errors.New("no enough cards")
+)
+
 // Deck holds a full set of uno cards
 type Deck struct {
-	cards []Card
+	index int
+	cards []uint8
 }
 
 // NewDeck creates and returns pointer to a new Deck object
 func NewDeck() *Deck {
 	deck := &Deck{
-		cards: make([]Card, len(cardPreset)),
+		cards: make([]uint8, len(cardPreset)),
 	}
 	copy(deck.cards, cardPreset)
 	return deck
+}
+
+// Deal a single card from deck, if the deck is empty, a 0 will be returned
+func (d *Deck) Deal() (c uint8, err error) {
+	if d.index >= len(d.cards) {
+		err = ErrorNoEnoughCards
+		return
+	}
+	c = d.cards[d.index]
+	d.index++
+	return
+}
+
+func (d *Deck) deals(num int) (c []uint8, err error) {
+	if d.index+num >= len(d.cards) {
+		err = ErrorNoEnoughCards
+		return
+	}
+	c = d.cards[d.index : d.index+num]
+	d.index += num
+	return
+}
+
+// Deal2 deals 2 cards from deck
+func (d *Deck) Deal2() (c []uint8, err error) {
+	return d.deals(2)
+}
+
+// Deal4 deals 4 cards from deck
+func (d *Deck) Deal4() (c []uint8, err error) {
+	return d.deals(4)
+}
+
+// Shuffle caards in deck
+func (d *Deck) Shuffle() {
+	for i := len(d.cards) - 1; i > 0; i-- {
+		j := rand.Intn(i + 1)
+		d.cards[i], d.cards[j] = d.cards[j], d.cards[i]
+	}
+}
+
+// CardsRemaining returns the number of available cards in deck
+func (d *Deck) CardsRemaining() int {
+	return len(d.cards) - d.index
 }

@@ -27,11 +27,17 @@ enum Event {
 }
 
 enum CardColor {
-    COLOR_BLACK  = 0; // black for wild cards
-    COLOR_RED    = 1; // red
-    COLOR_YELLOW = 2; // yellow
-    COLOR_BLUE   = 4; // blue
-    COLOR_GREEN  = 8; // green
+    COLOR_RED    = 0x00; // red
+    COLOR_YELLOW = 0x10; // yellow
+    COLOR_BLUE   = 0x20; // blue
+    COLOR_GREEN  = 0x30; // green
+}
+
+enum PlayerStatus {
+    STATUS_DEFAULT   = 0x00; // default state
+    STATUS_UNO       = 0x01; // uno flag
+    STATUS_SKIP      = 0x02; // force skip this round
+    STATUS_CHALLENGE = 0x04; // player challenge last player's wild draw 4
 }
 
 message TableConfig {
@@ -40,36 +46,36 @@ message TableConfig {
 }
 
 message UnoPlayer {
-    fixed64  uid          = 1; // user id
-    int32    timeout      = 2; // timeout, in seconds
-    bool     uno          = 3; // uno flag
-    repeated uint32 cards = 4; // uno cards
+    fixed64 uid     = 1; // user id
+    int32   timeout = 2; // timeout, in seconds
+    int32   status  = 3; // status flag
+    bytes   cards   = 4; // uno cards
 }
 
 message S2CTableState {
-    fixed64     tid              = 1;  // table id
-    bool        playing          = 2;  // is game running
-    bool        clockwise        = 3;  // current direction
-    fixed64     dealer_uid       = 4;  // dealer uid
-    fixed64     last_player      = 5;  // last player
-    fixed64     current_player   = 6;  // current player
-    int32       cards_left       = 7;  // cards left in deck, can be calculated
-    TableConfig table_config     = 8;  // table config
-    repeated uint32 cards_played = 9;  // cards played
-    repeated UnoPlayer players   = 10; // player list
+    fixed64     tid            = 1;  // table id
+    bool        playing        = 2;  // is game running
+    bool        clockwise      = 3;  // current direction
+    fixed64     dealer_uid     = 4;  // dealer uid
+    fixed64     last_player    = 5;  // last player
+    fixed64     current_player = 6;  // current player
+    int32       cards_left     = 7;  // cards left in deck, can be calculated
+    TableConfig table_config   = 8;  // table config
+    bytes       cards_played   = 9;  // cards played
+    repeated UnoPlayer players = 10; // player list
 }
 
 message C2SAction {
     int32 event      = 1; // event as action
-    int32 card       = 2; // card played
+    bytes card       = 2; // card played
     int32 wild_color = 3; // player play wild and select next play color
 }
 
 message S2CEventNty {
-    fixed64  uid         = 1; // player uid
-    int32    event       = 2; // action
-    int32    wild_color  = 3; // player play wild and select next play color
-    repeated uint32 card = 4; // cards involved
+    fixed64 uid        = 1; // player uid
+    int32   event      = 2; // action
+    int32   wild_color = 3; // player play wild and select next play color
+    bytes   card       = 4; // cards involved
 }
 
 message S2CGameOverNty {

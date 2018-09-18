@@ -11,6 +11,10 @@ var enterGameHandler = &FrameHandler{
 
 		if c.TID != 0 {
 			// find unfinished game
+			table := findTable(c.TID)
+			if table != nil {
+
+			}
 		} else {
 			// new game
 		}

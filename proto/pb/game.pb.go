@@ -60,7 +60,7 @@ func (x GameCmd) String() string {
 	return proto.EnumName(GameCmd_name, int32(x))
 }
 func (GameCmd) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{0}
+	return fileDescriptor_game_d418705ce220b7d4, []int{0}
 }
 
 type Event int32
@@ -101,39 +101,65 @@ func (x Event) String() string {
 	return proto.EnumName(Event_name, int32(x))
 }
 func (Event) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{1}
+	return fileDescriptor_game_d418705ce220b7d4, []int{1}
 }
 
 type CardColor int32
 
 const (
-	CardColor_COLOR_BLACK  CardColor = 0
-	CardColor_COLOR_RED    CardColor = 1
-	CardColor_COLOR_YELLOW CardColor = 2
-	CardColor_COLOR_BLUE   CardColor = 4
-	CardColor_COLOR_GREEN  CardColor = 8
+	CardColor_COLOR_RED    CardColor = 0
+	CardColor_COLOR_YELLOW CardColor = 16
+	CardColor_COLOR_BLUE   CardColor = 32
+	CardColor_COLOR_GREEN  CardColor = 48
 )
 
 var CardColor_name = map[int32]string{
-	0: "COLOR_BLACK",
-	1: "COLOR_RED",
-	2: "COLOR_YELLOW",
-	4: "COLOR_BLUE",
-	8: "COLOR_GREEN",
+	0:  "COLOR_RED",
+	16: "COLOR_YELLOW",
+	32: "COLOR_BLUE",
+	48: "COLOR_GREEN",
 }
 var CardColor_value = map[string]int32{
-	"COLOR_BLACK":  0,
-	"COLOR_RED":    1,
-	"COLOR_YELLOW": 2,
-	"COLOR_BLUE":   4,
-	"COLOR_GREEN":  8,
+	"COLOR_RED":    0,
+	"COLOR_YELLOW": 16,
+	"COLOR_BLUE":   32,
+	"COLOR_GREEN":  48,
 }
 
 func (x CardColor) String() string {
 	return proto.EnumName(CardColor_name, int32(x))
 }
 func (CardColor) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{2}
+	return fileDescriptor_game_d418705ce220b7d4, []int{2}
+}
+
+type PlayerStatus int32
+
+const (
+	PlayerStatus_STATUS_DEFAULT   PlayerStatus = 0
+	PlayerStatus_STATUS_UNO       PlayerStatus = 1
+	PlayerStatus_STATUS_SKIP      PlayerStatus = 2
+	PlayerStatus_STATUS_CHALLENGE PlayerStatus = 4
+)
+
+var PlayerStatus_name = map[int32]string{
+	0: "STATUS_DEFAULT",
+	1: "STATUS_UNO",
+	2: "STATUS_SKIP",
+	4: "STATUS_CHALLENGE",
+}
+var PlayerStatus_value = map[string]int32{
+	"STATUS_DEFAULT":   0,
+	"STATUS_UNO":       1,
+	"STATUS_SKIP":      2,
+	"STATUS_CHALLENGE": 4,
+}
+
+func (x PlayerStatus) String() string {
+	return proto.EnumName(PlayerStatus_name, int32(x))
+}
+func (PlayerStatus) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_game_d418705ce220b7d4, []int{3}
 }
 
 type TableConfig struct {
@@ -148,7 +174,7 @@ func (m *TableConfig) Reset()         { *m = TableConfig{} }
 func (m *TableConfig) String() string { return proto.CompactTextString(m) }
 func (*TableConfig) ProtoMessage()    {}
 func (*TableConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{0}
+	return fileDescriptor_game_d418705ce220b7d4, []int{0}
 }
 func (m *TableConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -194,8 +220,8 @@ func (m *TableConfig) GetGameOverDuration() int32 {
 type UnoPlayer struct {
 	Uid                  uint64   `protobuf:"fixed64,1,opt,name=uid,proto3" json:"uid,omitempty"`
 	Timeout              int32    `protobuf:"varint,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	Uno                  bool     `protobuf:"varint,3,opt,name=uno,proto3" json:"uno,omitempty"`
-	Cards                []uint32 `protobuf:"varint,4,rep,packed,name=cards" json:"cards,omitempty"`
+	Status               int32    `protobuf:"varint,3,opt,name=status,proto3" json:"status,omitempty"`
+	Cards                []byte   `protobuf:"bytes,4,opt,name=cards,proto3" json:"cards,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -205,7 +231,7 @@ func (m *UnoPlayer) Reset()         { *m = UnoPlayer{} }
 func (m *UnoPlayer) String() string { return proto.CompactTextString(m) }
 func (*UnoPlayer) ProtoMessage()    {}
 func (*UnoPlayer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{1}
+	return fileDescriptor_game_d418705ce220b7d4, []int{1}
 }
 func (m *UnoPlayer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -248,14 +274,14 @@ func (m *UnoPlayer) GetTimeout() int32 {
 	return 0
 }
 
-func (m *UnoPlayer) GetUno() bool {
+func (m *UnoPlayer) GetStatus() int32 {
 	if m != nil {
-		return m.Uno
+		return m.Status
 	}
-	return false
+	return 0
 }
 
-func (m *UnoPlayer) GetCards() []uint32 {
+func (m *UnoPlayer) GetCards() []byte {
 	if m != nil {
 		return m.Cards
 	}
@@ -271,7 +297,7 @@ type S2CTableState struct {
 	CurrentPlayer        uint64       `protobuf:"fixed64,6,opt,name=current_player,json=currentPlayer,proto3" json:"current_player,omitempty"`
 	CardsLeft            int32        `protobuf:"varint,7,opt,name=cards_left,json=cardsLeft,proto3" json:"cards_left,omitempty"`
 	TableConfig          *TableConfig `protobuf:"bytes,8,opt,name=table_config,json=tableConfig" json:"table_config,omitempty"`
-	CardsPlayed          []uint32     `protobuf:"varint,9,rep,packed,name=cards_played,json=cardsPlayed" json:"cards_played,omitempty"`
+	CardsPlayed          []byte       `protobuf:"bytes,9,opt,name=cards_played,json=cardsPlayed,proto3" json:"cards_played,omitempty"`
 	Players              []*UnoPlayer `protobuf:"bytes,10,rep,name=players" json:"players,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
@@ -282,7 +308,7 @@ func (m *S2CTableState) Reset()         { *m = S2CTableState{} }
 func (m *S2CTableState) String() string { return proto.CompactTextString(m) }
 func (*S2CTableState) ProtoMessage()    {}
 func (*S2CTableState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{2}
+	return fileDescriptor_game_d418705ce220b7d4, []int{2}
 }
 func (m *S2CTableState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -367,7 +393,7 @@ func (m *S2CTableState) GetTableConfig() *TableConfig {
 	return nil
 }
 
-func (m *S2CTableState) GetCardsPlayed() []uint32 {
+func (m *S2CTableState) GetCardsPlayed() []byte {
 	if m != nil {
 		return m.CardsPlayed
 	}
@@ -383,7 +409,7 @@ func (m *S2CTableState) GetPlayers() []*UnoPlayer {
 
 type C2SAction struct {
 	Event                int32    `protobuf:"varint,1,opt,name=event,proto3" json:"event,omitempty"`
-	Card                 int32    `protobuf:"varint,2,opt,name=card,proto3" json:"card,omitempty"`
+	Card                 []byte   `protobuf:"bytes,2,opt,name=card,proto3" json:"card,omitempty"`
 	WildColor            int32    `protobuf:"varint,3,opt,name=wild_color,json=wildColor,proto3" json:"wild_color,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -394,7 +420,7 @@ func (m *C2SAction) Reset()         { *m = C2SAction{} }
 func (m *C2SAction) String() string { return proto.CompactTextString(m) }
 func (*C2SAction) ProtoMessage()    {}
 func (*C2SAction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{3}
+	return fileDescriptor_game_d418705ce220b7d4, []int{3}
 }
 func (m *C2SAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -430,11 +456,11 @@ func (m *C2SAction) GetEvent() int32 {
 	return 0
 }
 
-func (m *C2SAction) GetCard() int32 {
+func (m *C2SAction) GetCard() []byte {
 	if m != nil {
 		return m.Card
 	}
-	return 0
+	return nil
 }
 
 func (m *C2SAction) GetWildColor() int32 {
@@ -448,7 +474,7 @@ type S2CEventNty struct {
 	Uid                  uint64   `protobuf:"fixed64,1,opt,name=uid,proto3" json:"uid,omitempty"`
 	Event                int32    `protobuf:"varint,2,opt,name=event,proto3" json:"event,omitempty"`
 	WildColor            int32    `protobuf:"varint,3,opt,name=wild_color,json=wildColor,proto3" json:"wild_color,omitempty"`
-	Card                 []uint32 `protobuf:"varint,4,rep,packed,name=card" json:"card,omitempty"`
+	Card                 []byte   `protobuf:"bytes,4,opt,name=card,proto3" json:"card,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -458,7 +484,7 @@ func (m *S2CEventNty) Reset()         { *m = S2CEventNty{} }
 func (m *S2CEventNty) String() string { return proto.CompactTextString(m) }
 func (*S2CEventNty) ProtoMessage()    {}
 func (*S2CEventNty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{4}
+	return fileDescriptor_game_d418705ce220b7d4, []int{4}
 }
 func (m *S2CEventNty) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -508,7 +534,7 @@ func (m *S2CEventNty) GetWildColor() int32 {
 	return 0
 }
 
-func (m *S2CEventNty) GetCard() []uint32 {
+func (m *S2CEventNty) GetCard() []byte {
 	if m != nil {
 		return m.Card
 	}
@@ -527,7 +553,7 @@ func (m *S2CGameOverNty) Reset()         { *m = S2CGameOverNty{} }
 func (m *S2CGameOverNty) String() string { return proto.CompactTextString(m) }
 func (*S2CGameOverNty) ProtoMessage()    {}
 func (*S2CGameOverNty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_game_610b1c525f5999bb, []int{5}
+	return fileDescriptor_game_d418705ce220b7d4, []int{5}
 }
 func (m *S2CGameOverNty) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -580,6 +606,7 @@ func init() {
 	proto.RegisterEnum("proto.game.GameCmd", GameCmd_name, GameCmd_value)
 	proto.RegisterEnum("proto.game.Event", Event_name, Event_value)
 	proto.RegisterEnum("proto.game.CardColor", CardColor_name, CardColor_value)
+	proto.RegisterEnum("proto.game.PlayerStatus", PlayerStatus_name, PlayerStatus_value)
 }
 func (m *TableConfig) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -638,32 +665,16 @@ func (m *UnoPlayer) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintGame(dAtA, i, uint64(m.Timeout))
 	}
-	if m.Uno {
+	if m.Status != 0 {
 		dAtA[i] = 0x18
 		i++
-		if m.Uno {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
+		i = encodeVarintGame(dAtA, i, uint64(m.Status))
 	}
 	if len(m.Cards) > 0 {
-		dAtA2 := make([]byte, len(m.Cards)*10)
-		var j1 int
-		for _, num := range m.Cards {
-			for num >= 1<<7 {
-				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j1++
-			}
-			dAtA2[j1] = uint8(num)
-			j1++
-		}
 		dAtA[i] = 0x22
 		i++
-		i = encodeVarintGame(dAtA, i, uint64(j1))
-		i += copy(dAtA[i:], dAtA2[:j1])
+		i = encodeVarintGame(dAtA, i, uint64(len(m.Cards)))
+		i += copy(dAtA[i:], m.Cards)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -739,28 +750,17 @@ func (m *S2CTableState) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x42
 		i++
 		i = encodeVarintGame(dAtA, i, uint64(m.TableConfig.Size()))
-		n3, err := m.TableConfig.MarshalTo(dAtA[i:])
+		n1, err := m.TableConfig.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n1
 	}
 	if len(m.CardsPlayed) > 0 {
-		dAtA5 := make([]byte, len(m.CardsPlayed)*10)
-		var j4 int
-		for _, num := range m.CardsPlayed {
-			for num >= 1<<7 {
-				dAtA5[j4] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j4++
-			}
-			dAtA5[j4] = uint8(num)
-			j4++
-		}
 		dAtA[i] = 0x4a
 		i++
-		i = encodeVarintGame(dAtA, i, uint64(j4))
-		i += copy(dAtA[i:], dAtA5[:j4])
+		i = encodeVarintGame(dAtA, i, uint64(len(m.CardsPlayed)))
+		i += copy(dAtA[i:], m.CardsPlayed)
 	}
 	if len(m.Players) > 0 {
 		for _, msg := range m.Players {
@@ -800,10 +800,11 @@ func (m *C2SAction) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintGame(dAtA, i, uint64(m.Event))
 	}
-	if m.Card != 0 {
-		dAtA[i] = 0x10
+	if len(m.Card) > 0 {
+		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGame(dAtA, i, uint64(m.Card))
+		i = encodeVarintGame(dAtA, i, uint64(len(m.Card)))
+		i += copy(dAtA[i:], m.Card)
 	}
 	if m.WildColor != 0 {
 		dAtA[i] = 0x18
@@ -848,21 +849,10 @@ func (m *S2CEventNty) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintGame(dAtA, i, uint64(m.WildColor))
 	}
 	if len(m.Card) > 0 {
-		dAtA7 := make([]byte, len(m.Card)*10)
-		var j6 int
-		for _, num := range m.Card {
-			for num >= 1<<7 {
-				dAtA7[j6] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j6++
-			}
-			dAtA7[j6] = uint8(num)
-			j6++
-		}
 		dAtA[i] = 0x22
 		i++
-		i = encodeVarintGame(dAtA, i, uint64(j6))
-		i += copy(dAtA[i:], dAtA7[:j6])
+		i = encodeVarintGame(dAtA, i, uint64(len(m.Card)))
+		i += copy(dAtA[i:], m.Card)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -895,22 +885,22 @@ func (m *S2CGameOverNty) MarshalTo(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.Scores) > 0 {
-		dAtA9 := make([]byte, len(m.Scores)*10)
-		var j8 int
+		dAtA3 := make([]byte, len(m.Scores)*10)
+		var j2 int
 		for _, num1 := range m.Scores {
 			num := uint64(num1)
 			for num >= 1<<7 {
-				dAtA9[j8] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA3[j2] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j8++
+				j2++
 			}
-			dAtA9[j8] = uint8(num)
-			j8++
+			dAtA3[j2] = uint8(num)
+			j2++
 		}
 		dAtA[i] = 0x12
 		i++
-		i = encodeVarintGame(dAtA, i, uint64(j8))
-		i += copy(dAtA[i:], dAtA9[:j8])
+		i = encodeVarintGame(dAtA, i, uint64(j2))
+		i += copy(dAtA[i:], dAtA3[:j2])
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -951,15 +941,12 @@ func (m *UnoPlayer) Size() (n int) {
 	if m.Timeout != 0 {
 		n += 1 + sovGame(uint64(m.Timeout))
 	}
-	if m.Uno {
-		n += 2
+	if m.Status != 0 {
+		n += 1 + sovGame(uint64(m.Status))
 	}
-	if len(m.Cards) > 0 {
-		l = 0
-		for _, e := range m.Cards {
-			l += sovGame(uint64(e))
-		}
-		n += 1 + sovGame(uint64(l)) + l
+	l = len(m.Cards)
+	if l > 0 {
+		n += 1 + l + sovGame(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -995,12 +982,9 @@ func (m *S2CTableState) Size() (n int) {
 		l = m.TableConfig.Size()
 		n += 1 + l + sovGame(uint64(l))
 	}
-	if len(m.CardsPlayed) > 0 {
-		l = 0
-		for _, e := range m.CardsPlayed {
-			l += sovGame(uint64(e))
-		}
-		n += 1 + sovGame(uint64(l)) + l
+	l = len(m.CardsPlayed)
+	if l > 0 {
+		n += 1 + l + sovGame(uint64(l))
 	}
 	if len(m.Players) > 0 {
 		for _, e := range m.Players {
@@ -1020,8 +1004,9 @@ func (m *C2SAction) Size() (n int) {
 	if m.Event != 0 {
 		n += 1 + sovGame(uint64(m.Event))
 	}
-	if m.Card != 0 {
-		n += 1 + sovGame(uint64(m.Card))
+	l = len(m.Card)
+	if l > 0 {
+		n += 1 + l + sovGame(uint64(l))
 	}
 	if m.WildColor != 0 {
 		n += 1 + sovGame(uint64(m.WildColor))
@@ -1044,12 +1029,9 @@ func (m *S2CEventNty) Size() (n int) {
 	if m.WildColor != 0 {
 		n += 1 + sovGame(uint64(m.WildColor))
 	}
-	if len(m.Card) > 0 {
-		l = 0
-		for _, e := range m.Card {
-			l += sovGame(uint64(e))
-		}
-		n += 1 + sovGame(uint64(l)) + l
+	l = len(m.Card)
+	if l > 0 {
+		n += 1 + l + sovGame(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1238,9 +1220,9 @@ func (m *UnoPlayer) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Uno", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
 			}
-			var v int
+			m.Status = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGame
@@ -1250,74 +1232,42 @@ func (m *UnoPlayer) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				m.Status |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Uno = bool(v != 0)
 		case 4:
-			if wireType == 0 {
-				var v uint32
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint32(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Cards = append(m.Cards, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthGame
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				for iNdEx < postIndex {
-					var v uint32
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGame
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (uint32(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Cards = append(m.Cards, v)
-				}
-			} else {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Cards", wireType)
 			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGame
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGame
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cards = append(m.Cards[:0], dAtA[iNdEx:postIndex]...)
+			if m.Cards == nil {
+				m.Cards = []byte{}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGame(dAtA[iNdEx:])
@@ -1502,67 +1452,36 @@ func (m *S2CTableState) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 9:
-			if wireType == 0 {
-				var v uint32
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint32(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.CardsPlayed = append(m.CardsPlayed, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthGame
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				for iNdEx < postIndex {
-					var v uint32
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGame
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (uint32(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.CardsPlayed = append(m.CardsPlayed, v)
-				}
-			} else {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CardsPlayed", wireType)
 			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGame
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGame
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CardsPlayed = append(m.CardsPlayed[:0], dAtA[iNdEx:postIndex]...)
+			if m.CardsPlayed == nil {
+				m.CardsPlayed = []byte{}
+			}
+			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Players", wireType)
@@ -1665,10 +1584,10 @@ func (m *C2SAction) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 2:
-			if wireType != 0 {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Card", wireType)
 			}
-			m.Card = 0
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGame
@@ -1678,11 +1597,23 @@ func (m *C2SAction) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Card |= (int32(b) & 0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGame
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Card = append(m.Card[:0], dAtA[iNdEx:postIndex]...)
+			if m.Card == nil {
+				m.Card = []byte{}
+			}
+			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WildColor", wireType)
@@ -1802,67 +1733,36 @@ func (m *S2CEventNty) Unmarshal(dAtA []byte) error {
 				}
 			}
 		case 4:
-			if wireType == 0 {
-				var v uint32
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (uint32(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Card = append(m.Card, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowGame
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthGame
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				for iNdEx < postIndex {
-					var v uint32
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowGame
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (uint32(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Card = append(m.Card, v)
-				}
-			} else {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Card", wireType)
 			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGame
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGame
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Card = append(m.Card[:0], dAtA[iNdEx:postIndex]...)
+			if m.Card == nil {
+				m.Card = []byte{}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGame(dAtA[iNdEx:])
@@ -2150,57 +2050,59 @@ var (
 	ErrIntOverflowGame   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("game.proto", fileDescriptor_game_610b1c525f5999bb) }
+func init() { proto.RegisterFile("game.proto", fileDescriptor_game_d418705ce220b7d4) }
 
-var fileDescriptor_game_610b1c525f5999bb = []byte{
-	// 778 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x52, 0xcd, 0x6e, 0xdb, 0x46,
-	0x10, 0x36, 0x25, 0x4b, 0x36, 0x87, 0x96, 0xbc, 0xdd, 0xa4, 0x09, 0x81, 0x36, 0xae, 0x2a, 0xa0,
-	0x80, 0x60, 0xb4, 0x52, 0xa1, 0xde, 0x7a, 0x28, 0xa4, 0xd0, 0x1b, 0xc7, 0x30, 0x43, 0xa9, 0x4b,
-	0xca, 0x85, 0x7b, 0x08, 0x41, 0x93, 0x6b, 0x85, 0x08, 0x45, 0x0a, 0xcb, 0x95, 0x03, 0x1f, 0xfb,
-	0x83, 0xa2, 0x87, 0x3e, 0x48, 0x1f, 0xa5, 0xc7, 0x3e, 0x42, 0xe1, 0x17, 0xe8, 0x2b, 0x14, 0xbb,
-	0x4b, 0x49, 0x8e, 0x51, 0xe4, 0xc4, 0xf9, 0x3e, 0xce, 0xcc, 0xb7, 0x33, 0xdf, 0x00, 0xcc, 0xa3,
-	0x05, 0xeb, 0x2f, 0x79, 0x21, 0x0a, 0x0c, 0xea, 0xd3, 0x97, 0x4c, 0xf7, 0x35, 0x58, 0x41, 0x74,
-	0x95, 0x31, 0xa7, 0xc8, 0xaf, 0xd3, 0x39, 0xfe, 0x1c, 0x0e, 0xc4, 0x8a, 0xe7, 0xa1, 0x48, 0x17,
-	0xac, 0x58, 0x09, 0xdb, 0xe8, 0x18, 0xbd, 0x06, 0xb5, 0x24, 0x17, 0x68, 0x0a, 0x7f, 0x09, 0x58,
-	0x56, 0x86, 0xc5, 0x0d, 0xe3, 0x61, 0xb2, 0xe2, 0x91, 0x48, 0x8b, 0xdc, 0xae, 0xa9, 0x44, 0x24,
-	0xff, 0x4c, 0x6e, 0x18, 0x3f, 0xa9, 0xf8, 0x6e, 0x08, 0xe6, 0x2c, 0x2f, 0xa6, 0x59, 0x74, 0xcb,
-	0x38, 0x46, 0x50, 0x5f, 0xa5, 0x89, 0x6a, 0xda, 0xa4, 0x32, 0xc4, 0x36, 0xec, 0xad, 0xa5, 0x74,
-	0x87, 0x35, 0x54, 0xb9, 0x79, 0x61, 0xd7, 0x3b, 0x46, 0x6f, 0x9f, 0xca, 0x10, 0x3f, 0x86, 0x46,
-	0x1c, 0xf1, 0xa4, 0xb4, 0x77, 0x3b, 0xf5, 0x5e, 0x8b, 0x6a, 0xd0, 0xfd, 0xb7, 0x06, 0x2d, 0x7f,
-	0xe8, 0xa8, 0x21, 0x7c, 0x11, 0x09, 0x26, 0x2b, 0xc5, 0x56, 0x45, 0x68, 0x95, 0x65, 0x16, 0xdd,
-	0xa6, 0xf9, 0x5c, 0xa9, 0xec, 0xd3, 0x35, 0xc4, 0x9f, 0x82, 0x19, 0x67, 0x45, 0xfc, 0xf6, 0x5d,
-	0x5a, 0xb2, 0x4a, 0x6b, 0x4b, 0xe0, 0x67, 0x00, 0x09, 0x8b, 0x32, 0xc6, 0x43, 0xf9, 0xec, 0x5d,
-	0xd5, 0xd0, 0xd4, 0xcc, 0x2c, 0x4d, 0xf0, 0x67, 0x60, 0x65, 0x51, 0x29, 0xc2, 0xa5, 0x9a, 0xce,
-	0x6e, 0xa8, 0xff, 0x20, 0xa9, 0x6a, 0xde, 0x2f, 0xa0, 0x1d, 0xaf, 0x38, 0x67, 0xf9, 0x26, 0xa7,
-	0xa9, 0x72, 0x5a, 0x15, 0x5b, 0xa5, 0x3d, 0x03, 0x50, 0xb3, 0x84, 0x19, 0xbb, 0x16, 0xf6, 0x9e,
-	0xda, 0x83, 0xa9, 0x18, 0x97, 0x5d, 0x0b, 0xfc, 0x2d, 0x1c, 0x08, 0x39, 0x5d, 0x18, 0x2b, 0x8f,
-	0xec, 0xfd, 0x8e, 0xd1, 0xb3, 0x86, 0x4f, 0xfb, 0x5b, 0x17, 0xfb, 0xf7, 0x2c, 0xa4, 0x96, 0x78,
-	0xdf, 0x4f, 0xdd, 0x5a, 0xe9, 0x27, 0xb6, 0xa9, 0x56, 0x67, 0x29, 0x4e, 0xa9, 0x27, 0x78, 0xa0,
-	0x97, 0xc3, 0x78, 0x69, 0x43, 0xa7, 0xde, 0xb3, 0x86, 0x1f, 0xdf, 0xef, 0xbc, 0x31, 0x8f, 0xae,
-	0xb3, 0xba, 0x01, 0x98, 0xce, 0xd0, 0x1f, 0xc7, 0xd2, 0x5f, 0x69, 0x0a, 0xbb, 0x61, 0xf9, 0xfa,
-	0x52, 0x34, 0xc0, 0x18, 0x76, 0xa5, 0x44, 0xe5, 0xa9, 0x8a, 0xe5, 0x94, 0xef, 0xd2, 0x2c, 0x09,
-	0xe3, 0x22, 0x2b, 0xb8, 0xda, 0x75, 0x83, 0x9a, 0x92, 0x71, 0x24, 0xd1, 0x7d, 0x03, 0x96, 0x3f,
-	0x74, 0x88, 0x2c, 0xf7, 0xc4, 0xed, 0xff, 0x9c, 0xca, 0x46, 0xa9, 0x76, 0x5f, 0xe9, 0xc3, 0x5d,
-	0x37, 0x0f, 0xd1, 0x27, 0xa3, 0xe2, 0xee, 0x77, 0xd0, 0xf6, 0x87, 0xce, 0x69, 0x75, 0xa9, 0x52,
-	0xec, 0x31, 0x34, 0x78, 0x94, 0xbf, 0x2d, 0x6d, 0xa3, 0x53, 0xef, 0x35, 0xa9, 0x06, 0xf8, 0x09,
-	0x34, 0xcb, 0xb8, 0xe0, 0xac, 0xb4, 0x6b, 0x9d, 0x7a, 0xaf, 0x41, 0x2b, 0x74, 0xfc, 0x87, 0x01,
-	0x7b, 0xb2, 0xda, 0x59, 0x24, 0xf8, 0x23, 0x68, 0x9d, 0x8e, 0x5f, 0x91, 0x90, 0x12, 0x9f, 0xd0,
-	0x0b, 0x72, 0x82, 0x76, 0xf0, 0x23, 0x68, 0x13, 0x2f, 0x20, 0x34, 0xac, 0x7e, 0x7c, 0x8f, 0x7e,
-	0x1a, 0x3d, 0x24, 0xfd, 0x29, 0xfa, 0x79, 0x84, 0x0f, 0x01, 0xc6, 0x4e, 0x70, 0x36, 0xf1, 0x54,
-	0xd6, 0x2f, 0xef, 0x11, 0xfe, 0x14, 0xfd, 0x3a, 0xc2, 0x6d, 0x30, 0xc9, 0x05, 0xf1, 0x82, 0xd0,
-	0x0b, 0x2e, 0xd1, 0x6f, 0x23, 0x8c, 0x2b, 0xb9, 0xc9, 0x05, 0xa1, 0x8a, 0xfb, 0x7d, 0x74, 0xfc,
-	0xa7, 0x01, 0x0d, 0xb5, 0x36, 0xdc, 0x06, 0xd0, 0xd9, 0x53, 0x77, 0x7c, 0x89, 0x76, 0x30, 0x86,
-	0xb6, 0xc6, 0x33, 0x6f, 0xa2, 0x39, 0x63, 0x9b, 0x73, 0x42, 0xc7, 0x3f, 0xa0, 0xda, 0x16, 0xfb,
-	0xe7, 0x67, 0x53, 0x54, 0xc7, 0x8f, 0xe0, 0x50, 0x63, 0xe7, 0xe5, 0xd8, 0x75, 0x89, 0x77, 0x4a,
-	0xd0, 0x2e, 0xfe, 0x04, 0x9e, 0x3e, 0x20, 0xc3, 0x29, 0xf1, 0xc6, 0x6e, 0x70, 0x89, 0x1a, 0x72,
-	0x05, 0xfa, 0x67, 0x70, 0xf6, 0x8a, 0x4c, 0x66, 0x01, 0x6a, 0xe2, 0x27, 0x80, 0x2b, 0x11, 0xe2,
-	0x9c, 0x87, 0xfe, 0xcb, 0xd9, 0x8b, 0x17, 0x2e, 0x41, 0x7b, 0xc7, 0xaf, 0xc1, 0x74, 0x22, 0x5e,
-	0x59, 0x73, 0x08, 0x96, 0x33, 0x71, 0x27, 0x34, 0x7c, 0xee, 0x8e, 0x9d, 0x73, 0xb4, 0x83, 0x5b,
-	0x60, 0x6a, 0x82, 0x92, 0x13, 0x64, 0x60, 0x04, 0x07, 0x1a, 0x5e, 0x12, 0xd7, 0x9d, 0x54, 0x6f,
-	0x5d, 0x57, 0xcc, 0xe4, 0xb3, 0x36, 0x1d, 0x4e, 0x29, 0x21, 0x1e, 0xda, 0x7f, 0xfe, 0xf5, 0x5f,
-	0x77, 0x47, 0xc6, 0xdf, 0x77, 0x47, 0xc6, 0x3f, 0x77, 0x47, 0xc6, 0x8f, 0xdd, 0x79, 0x2a, 0xde,
-	0xac, 0xae, 0xfa, 0x71, 0xb1, 0x18, 0x2c, 0xa2, 0x52, 0x30, 0xfe, 0xd5, 0x7c, 0x30, 0x2f, 0x56,
-	0x79, 0x31, 0x50, 0x07, 0x3e, 0x58, 0x5e, 0x5d, 0x35, 0x55, 0xf4, 0xcd, 0x7f, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x46, 0xf8, 0x41, 0xaa, 0x1f, 0x05, 0x00, 0x00,
+var fileDescriptor_game_d418705ce220b7d4 = []byte{
+	// 815 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x94, 0xdb, 0x6e, 0xe3, 0x44,
+	0x18, 0xc7, 0xeb, 0x9c, 0x5a, 0x7f, 0x4e, 0xd3, 0x61, 0xb6, 0xec, 0x5a, 0x82, 0x2d, 0x21, 0x12,
+	0x52, 0x54, 0x41, 0xb2, 0x0a, 0x77, 0x5c, 0xa0, 0x78, 0xdd, 0x69, 0xb7, 0x5a, 0xd7, 0x0e, 0x3e,
+	0x74, 0x15, 0x2e, 0xb0, 0x5c, 0x7b, 0x9a, 0xb5, 0xd6, 0xb1, 0x2b, 0x7b, 0xd2, 0x55, 0x2f, 0x39,
+	0x08, 0x71, 0xc1, 0x83, 0xf0, 0x28, 0x5c, 0xf2, 0x08, 0xa8, 0x2f, 0xc0, 0x2b, 0xa0, 0x99, 0x71,
+	0x9a, 0x6c, 0x85, 0xb8, 0xaa, 0xff, 0xbf, 0xf9, 0xe6, 0xfb, 0xcf, 0x77, 0x68, 0x00, 0x16, 0xd1,
+	0x92, 0x8e, 0x6e, 0xca, 0x82, 0x15, 0x18, 0xc4, 0x9f, 0x11, 0x27, 0x83, 0x1f, 0x40, 0xf3, 0xa3,
+	0xab, 0x8c, 0x9a, 0x45, 0x7e, 0x9d, 0x2e, 0xf0, 0xe7, 0xd0, 0x65, 0xab, 0x32, 0x0f, 0x59, 0xba,
+	0xa4, 0xc5, 0x8a, 0xe9, 0x4a, 0x5f, 0x19, 0xb6, 0x5d, 0x8d, 0x33, 0x5f, 0x22, 0xfc, 0x25, 0x60,
+	0x7e, 0x33, 0x2c, 0x6e, 0x69, 0x19, 0x26, 0xab, 0x32, 0x62, 0x69, 0x91, 0xeb, 0x0d, 0x11, 0x88,
+	0xf8, 0x89, 0x73, 0x4b, 0xcb, 0x93, 0x9a, 0x0f, 0x28, 0xa8, 0x41, 0x5e, 0xcc, 0xb2, 0xe8, 0x8e,
+	0x96, 0x18, 0x41, 0x73, 0x95, 0x26, 0x22, 0x69, 0xc7, 0xe5, 0x9f, 0x58, 0x87, 0xdd, 0xb5, 0x95,
+	0xcc, 0xb0, 0x96, 0xf8, 0x29, 0x74, 0x2a, 0x16, 0xb1, 0x55, 0xa5, 0x37, 0xc5, 0x41, 0xad, 0xf0,
+	0x21, 0xb4, 0xe3, 0xa8, 0x4c, 0x2a, 0xbd, 0xd5, 0x57, 0x86, 0x5d, 0x57, 0x8a, 0xc1, 0x3f, 0x0d,
+	0xd8, 0xf7, 0x26, 0xa6, 0x28, 0xc5, 0x63, 0x11, 0xa3, 0xdc, 0x8b, 0x6d, 0xbc, 0x98, 0xf4, 0xba,
+	0xc9, 0xa2, 0xbb, 0x34, 0x5f, 0x08, 0xaf, 0x3d, 0x77, 0x2d, 0xf1, 0xa7, 0xa0, 0xc6, 0x59, 0x11,
+	0xbf, 0x7b, 0x9f, 0x56, 0x54, 0xd8, 0xed, 0xb9, 0x1b, 0x80, 0x9f, 0x03, 0x24, 0x34, 0xca, 0x68,
+	0x19, 0xf2, 0xc7, 0xb7, 0x44, 0x42, 0x55, 0x92, 0x20, 0x4d, 0xf0, 0x67, 0xa0, 0x65, 0x51, 0xc5,
+	0xc2, 0x1b, 0x51, 0xa3, 0xde, 0x16, 0xe7, 0xc0, 0x51, 0x5d, 0xf5, 0x17, 0xd0, 0x8b, 0x57, 0x65,
+	0x49, 0xf3, 0x87, 0x98, 0x8e, 0x88, 0xd9, 0xaf, 0x69, 0x1d, 0xf6, 0x1c, 0x40, 0xd4, 0x12, 0x66,
+	0xf4, 0x9a, 0xe9, 0xbb, 0xa2, 0x68, 0x55, 0x10, 0x8b, 0x5e, 0x33, 0xfc, 0x0d, 0x74, 0x19, 0xaf,
+	0x2e, 0x8c, 0xc5, 0xa4, 0xf4, 0xbd, 0xbe, 0x32, 0xd4, 0x26, 0xcf, 0x46, 0x9b, 0x59, 0x8e, 0xb6,
+	0x06, 0xe9, 0x6a, 0xec, 0xc3, 0xa9, 0xca, 0xd4, 0xc2, 0x3f, 0xd1, 0x55, 0xd1, 0x3a, 0x4d, 0x30,
+	0xe1, 0x9e, 0xe0, 0xb1, 0x6c, 0x0e, 0x2d, 0x2b, 0x1d, 0xfa, 0xcd, 0xa1, 0x36, 0xf9, 0x78, 0x3b,
+	0xf3, 0xc3, 0x08, 0xdd, 0x75, 0xd4, 0xc0, 0x07, 0xd5, 0x9c, 0x78, 0x46, 0xcc, 0xa7, 0xcc, 0x87,
+	0x42, 0x6f, 0x69, 0xbe, 0xde, 0x17, 0x29, 0x30, 0x86, 0x16, 0xb7, 0x10, 0xdd, 0xee, 0xba, 0xe2,
+	0x9b, 0x57, 0xf9, 0x3e, 0xcd, 0x92, 0x30, 0x2e, 0xb2, 0xa2, 0xac, 0x47, 0xab, 0x72, 0x62, 0x72,
+	0x30, 0x78, 0x0b, 0x9a, 0x37, 0x31, 0x09, 0xbf, 0x6e, 0xb3, 0xbb, 0xff, 0x58, 0x98, 0x07, 0xa7,
+	0xc6, 0xb6, 0xd3, 0xff, 0x67, 0x7d, 0x78, 0x48, 0x6b, 0xf3, 0x90, 0xc1, 0xb7, 0xd0, 0xf3, 0x26,
+	0xe6, 0x59, 0xbd, 0xaf, 0xdc, 0xec, 0x10, 0xda, 0x65, 0x94, 0xbf, 0xab, 0x74, 0xa5, 0xdf, 0x1c,
+	0x76, 0x5c, 0x29, 0xc4, 0x1e, 0xc6, 0x45, 0x49, 0x2b, 0xbd, 0xd1, 0x6f, 0x8a, 0x3d, 0x14, 0xea,
+	0xf8, 0x77, 0x05, 0x76, 0xf9, 0x6d, 0x73, 0x99, 0xe0, 0x8f, 0x60, 0xff, 0xcc, 0xb8, 0x20, 0xa1,
+	0x4b, 0x3c, 0xe2, 0x5e, 0x92, 0x13, 0xb4, 0x83, 0x9f, 0x40, 0x8f, 0xd8, 0x3e, 0x71, 0xc3, 0xfa,
+	0xe0, 0x3b, 0xf4, 0xe3, 0xf4, 0x31, 0xf4, 0x66, 0xe8, 0xa7, 0x29, 0x3e, 0x00, 0x30, 0x4c, 0xff,
+	0xdc, 0xb1, 0x45, 0xd4, 0xcf, 0x1f, 0x00, 0x6f, 0x86, 0x7e, 0x99, 0xe2, 0x1e, 0xa8, 0xe4, 0x92,
+	0xd8, 0x7e, 0x68, 0xfb, 0x73, 0xf4, 0xeb, 0x14, 0xe3, 0xda, 0xce, 0xb9, 0x24, 0xae, 0x60, 0xbf,
+	0x4d, 0x8f, 0xff, 0x50, 0xa0, 0x2d, 0xda, 0x86, 0x7b, 0x00, 0x32, 0x7a, 0x66, 0x19, 0x73, 0xb4,
+	0x83, 0x31, 0xf4, 0xa4, 0x0e, 0x6c, 0x47, 0x32, 0x65, 0x13, 0x73, 0xe2, 0x1a, 0x6f, 0x50, 0x63,
+	0xa3, 0xbd, 0xd7, 0xe7, 0x33, 0xd4, 0xc4, 0x4f, 0xe0, 0x40, 0x6a, 0xf3, 0x95, 0x61, 0x59, 0xc4,
+	0x3e, 0x23, 0xa8, 0x85, 0x3f, 0x81, 0x67, 0x8f, 0x60, 0x38, 0x23, 0xb6, 0x61, 0xf9, 0x73, 0xd4,
+	0xe6, 0x2d, 0x90, 0x87, 0xfe, 0xf9, 0x05, 0x71, 0x02, 0x1f, 0x75, 0xf0, 0x53, 0xc0, 0xb5, 0x09,
+	0x31, 0x5f, 0x87, 0xde, 0xab, 0xe0, 0xf4, 0xd4, 0x22, 0x68, 0xf7, 0xf8, 0x02, 0x54, 0x33, 0x2a,
+	0xeb, 0xd1, 0xec, 0x83, 0x6a, 0x3a, 0x96, 0xe3, 0x86, 0xae, 0x68, 0x1b, 0x82, 0xae, 0x94, 0x73,
+	0x62, 0x59, 0xce, 0x1b, 0x84, 0xf8, 0xd3, 0x24, 0x79, 0x69, 0x05, 0x04, 0xf5, 0xf1, 0x01, 0x68,
+	0x52, 0x9f, 0xb9, 0x84, 0xd8, 0xe8, 0xc5, 0xf1, 0x1c, 0xba, 0x72, 0x37, 0x3d, 0xf9, 0x03, 0x81,
+	0xa1, 0xe7, 0xf9, 0x86, 0x1f, 0x78, 0xe1, 0x09, 0x39, 0x35, 0x02, 0xcb, 0x47, 0x3b, 0x3c, 0x49,
+	0xcd, 0x02, 0xdb, 0x41, 0x0a, 0x4f, 0x52, 0x6b, 0x51, 0x70, 0x03, 0x1f, 0x02, 0xaa, 0xc1, 0x56,
+	0xc5, 0x2f, 0x5f, 0xfc, 0x79, 0x7f, 0xa4, 0xfc, 0x75, 0x7f, 0xa4, 0xfc, 0x7d, 0x7f, 0xa4, 0x7c,
+	0x3f, 0x58, 0xa4, 0xec, 0xed, 0xea, 0x6a, 0x14, 0x17, 0xcb, 0xf1, 0x32, 0xaa, 0x18, 0x2d, 0xbf,
+	0x5a, 0x8c, 0x17, 0xc5, 0x2a, 0x2f, 0xc6, 0xe2, 0x5f, 0x65, 0x7c, 0x73, 0x75, 0xd5, 0x11, 0x5f,
+	0x5f, 0xff, 0x1b, 0x00, 0x00, 0xff, 0xff, 0x6d, 0xd5, 0x98, 0x01, 0x6f, 0x05, 0x00, 0x00,
 }
