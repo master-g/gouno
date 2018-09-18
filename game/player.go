@@ -52,6 +52,13 @@ func (p *PlayerState) SetFlag(flag int32) {
 	p.Flag |= flag
 }
 
+// NewPlayerState creates and returns pointer to a new PlayerState instance
+func NewPlayerState(uid uint64) *PlayerState {
+	return &PlayerState{
+		UID: uid,
+	}
+}
+
 // Dump convert PlayerState to pb.UnoPlayer
 func (p PlayerState) Dump(hideCards bool) *pb.UnoPlayer {
 	state := &pb.UnoPlayer{

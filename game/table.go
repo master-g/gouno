@@ -27,6 +27,7 @@ import (
 
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/uno"
+	"go.uber.org/zap"
 )
 
 // TableConfig holds table timeout configs
@@ -55,8 +56,12 @@ type Table struct {
 	Deck *uno.Deck
 	// Discard holds uno cards that has been discard
 	Discard []uint8
-	// Players array of player state
-	Players []PlayerState
+	// States array of player state
+	States []*PlayerState
+	// Clients array of clients
+	Clients []*Client
+	// Register channel for client
+	Register chan *RegisterRequest
 }
 
 var (
@@ -80,7 +85,7 @@ func findAvailableTable() *Table {
 	var result *Table
 	tableMap.Range(func(key, value interface{}) bool {
 		if t, ok := value.(*Table); ok {
-			if !t.Playing && len(t.Players) < tableConfig.MaxPlayers {
+			if !t.Playing && len(t.Clients) < tableConfig.MaxPlayers {
 				result = t
 				return false
 			}
@@ -104,12 +109,18 @@ func findTable(tid uint64) *Table {
 // NewTable creates and returns pointer to a new table instance
 func NewTable() *Table {
 	tidCounter++
-	return &Table{
+	table := &Table{
 		TID:       tidCounter,
 		Playing:   false,
 		Clockwise: true,
 		Deck:      uno.NewDeck(),
 	}
+	tableMap.Store(table.TID, table)
+	return table
+}
+
+func (t *Table) String() string {
+	return ""
 }
 
 // DumpState dumps table status and returns in S2CTableState
@@ -127,10 +138,82 @@ func (t Table) DumpState(hideCards bool) *pb.S2CTableState {
 			TurnTimeout:      int32(tableConfig.TurnTimeout.Seconds()),
 			GameOverDuration: int32(tableConfig.GameOverDuration.Seconds()),
 		},
-		Players: make([]*pb.UnoPlayer, len(t.Players)),
+		Players: make([]*pb.UnoPlayer, len(t.States)),
 	}
-	for i, v := range t.Players {
+	for i, v := range t.States {
 		state.Players[i] = v.Dump(hideCards)
 	}
 	return state
+}
+
+func (t *Table) registerClient(req *RegisterRequest) {
+	// add client
+	client := &Client{
+		UID: req.UID,
+		In:  make(chan pb.Frame),
+		Out: make(chan pb.Frame),
+		Die: make(chan struct{}),
+	}
+	t.Clients = append(t.Clients, client)
+
+	// add state
+	state := NewPlayerState(req.UID)
+	t.States = append(t.States, state)
+
+	// pass client back to agent
+	req.ClientEntry <- client
+
+	log.Info("client created for new connection", zap.Uint64("uid", req.UID))
+}
+
+func (t *Table) unregisterClient(c *Client) {
+	clients.Delete(c.UID)
+	close(c.Die)
+	close(c.In)
+	close(c.Out)
+
+	for i, v := range t.Clients {
+		if v.UID == c.UID {
+			// remove client and player state
+			t.Clients = append(t.Clients[:i], t.Clients[i+1:]...)
+			t.States = append(t.States[:i], t.States[i+1:]...)
+			break
+		}
+	}
+}
+
+// table logic loop
+func (t *Table) start(wg *sync.WaitGroup) {
+	t.Register = make(chan *RegisterRequest)
+
+	defer func() {
+		close(t.Register)
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case req := <-t.Register:
+			t.registerClient(req)
+			// TODO: table timer logic here
+		}
+
+		// client request read pump
+		for _, c := range t.Clients {
+			select {
+			case frame := <-c.In:
+				route(c, t, frame)
+			}
+		}
+
+		// if game is over, remove offline clients
+		if !t.Playing {
+			for _, c := range t.Clients {
+				if c.IsFlagOfflineSet() {
+					// TODO: will there be any bug?
+					t.unregisterClient(c)
+				}
+			}
+		}
+	}
 }

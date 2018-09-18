@@ -23,12 +23,11 @@ package game
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/master-g/gouno/proto/pb"
+	"go.uber.org/zap"
 )
 
-type handlerFunc func(c *Client, frame pb.Frame) (resp pb.Frame, err error)
+type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error)
 
 // FrameHandler process client frames
 type FrameHandler struct {
@@ -58,13 +57,13 @@ func registerAllHandlers() {
 	}
 }
 
-func route(client *Client, frame pb.Frame) {
+func route(c *Client, t *Table, frame pb.Frame) {
 	if h, ok := handlerMap[frame.Cmd]; ok {
-		resp, err := h.Handler(client, frame)
+		resp, err := h.Handler(c, t, frame)
 		if err != nil {
-			log.Info("error while handling cmd", zap.String("client", client.String()), zap.Int32("cmd", frame.Cmd))
+			log.Info("error while handling cmd", zap.Uint64("uid", c.UID), zap.Uint64("tid", t.TID), zap.Int32("cmd", int32(frame.Cmd)))
 		} else {
-			client.Out <- resp
+			c.Out <- resp
 		}
 	} else {
 		log.Warn("no handler for cmd", zap.Int32("cmd", frame.Cmd))

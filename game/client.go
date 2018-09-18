@@ -30,12 +30,10 @@ import (
 type Flag uint32
 
 const (
-	// FlagPlaying indicates the client is playing
-	FlagPlaying = 0x1
 	// FlagOffline indicates the client is disconnected, shall be remove after the game is over
-	FlagOffline = 0x2
+	FlagOffline = 0x1
 	// FlagKicked indicates the client is safe to removed from game
-	FlagKicked = 0x4
+	FlagKicked = 0x2
 )
 
 // Client holds client's uid and channels for communicate
@@ -46,7 +44,7 @@ type Client struct {
 	In chan pb.Frame
 	// Out channel for sending frames to session in agent
 	Out chan pb.Frame
-	// TID table ID, 0 for no table
+	// TID ID of the table this client play on
 	TID uint64
 	// Die channel as signal to indicate game server to remove this client
 	Die chan struct{}
@@ -56,22 +54,7 @@ type Client struct {
 
 // String interface
 func (c *Client) String() string {
-	return fmt.Sprintf("uid: %v, flag: %v", c.UID, c.flag)
-}
-
-// IsFlagPlayingSet returns true if the FlagPlaying is set
-func (c Client) IsFlagPlayingSet() bool {
-	return c.flag&FlagPlaying != 0
-}
-
-// ClearFlagPlaying clears the FlagPlaying bit
-func (c *Client) ClearFlagPlaying() {
-	c.flag &^= FlagPlaying
-}
-
-// SetFlagPlaying sets the FlagPlaying bit
-func (c *Client) SetFlagPlaying() {
-	c.flag |= FlagPlaying
+	return fmt.Sprintf("uid: %v, tid: %v, flag: %v", c.UID, c.TID, c.flag)
 }
 
 // IsFlagOfflineSet returns true if the FlagOffline is set

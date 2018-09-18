@@ -23,7 +23,6 @@ package game
 import (
 	"sync"
 
-	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/signal"
 	"go.uber.org/zap"
 )
@@ -56,24 +55,41 @@ func Start() {
 		close(Unregister)
 	}()
 
-	// register game CMD handler
+	// register all game CMD handlers
 	registerAllHandlers()
 
 	for {
 		select {
 		case req := <-Register:
+			var table *Table
 			if prev, ok := clients.Load(req.UID); ok {
 				prevClient, ok := prev.(*Client)
 				if ok {
+					// previous client found, try to find the related table
 					log.Info("prev client found", zap.String("client", prevClient.String()))
-					req.ClientEntry <- prevClient
+					table = findTable(prevClient.TID)
+					if table != nil {
+						// previous table found
+						req.ClientEntry <- prevClient
+					} else {
+						// previous table not found, error, need fix if this happens
+						log.Error("client with dangling table", zap.String("client", prevClient.String()))
+					}
 				} else {
 					log.Error("unable to convert *client")
 				}
 			} else {
 				// no previous client, start new goroutine
-				wg.Add(1)
-				go clientLoop(req)
+				table = findAvailableTable()
+				if table == nil {
+					// no available table, create new one
+					table = NewTable()
+					log.Info("new table created", zap.String("table", table.String()))
+					wg.Add(1)
+					go table.start(&wg)
+				}
+				// create new client in table loop
+				table.Register <- req
 			}
 		case uid := <-Unregister:
 			if v, ok := clients.Load(uid); ok {
@@ -84,6 +100,8 @@ func Start() {
 				} else {
 					client.SetFlagOffline()
 				}
+			} else {
+				log.Warn("try to unregister non exists client", zap.Uint64("uid", uid))
 			}
 		case <-signal.InterruptChan:
 			log.Info("shutting down game server")
@@ -94,44 +112,6 @@ func Start() {
 
 // WaitGameServerShutdown waits for game server to shutdown
 func WaitGameServerShutdown() {
+	// wait for all tables to tear down
 	wg.Wait()
-}
-
-func clientLoop(req *RegisterRequest) {
-	client := &Client{
-		UID: req.UID,
-		In:  make(chan pb.Frame),
-		Out: make(chan pb.Frame),
-		Die: make(chan struct{}),
-	}
-
-	log.Info("client created for new connection", zap.Uint64("uid", req.UID))
-
-	defer func() {
-		clients.Delete(req.UID)
-		close(client.Die)
-		close(client.In)
-		close(client.Out)
-		wg.Done()
-	}()
-
-	req.ClientEntry <- client
-
-	for {
-		select {
-		case frame := <-client.In:
-			route(client, frame)
-		case <-signal.InterruptChan:
-			// server shutting down, force quit
-			client.SetFlagKicked()
-		}
-		if client.IsFlagOfflineSet() && client.TID == 0 {
-			// client is offline, and no table related, remove
-			client.SetFlagKicked()
-		}
-
-		if client.IsFlagKickedSet() {
-			return
-		}
-	}
 }
