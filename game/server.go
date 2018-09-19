@@ -115,3 +115,28 @@ func WaitGameServerShutdown() {
 	// wait for all tables to tear down
 	wg.Wait()
 }
+
+func findAvailableTable() *Table {
+	var result *Table
+	tableMap.Range(func(key, value interface{}) bool {
+		if t, ok := value.(*Table); ok {
+			if !t.Playing && len(t.Clients) < tableConfig.MaxPlayers {
+				result = t
+				return false
+			}
+		}
+		return true
+	})
+
+	return result
+}
+
+func findTable(tid uint64) *Table {
+	if t, ok := tableMap.Load(tid); ok {
+		table, ok := t.(*Table)
+		if ok {
+			return table
+		}
+	}
+	return nil
+}

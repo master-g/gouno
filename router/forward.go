@@ -26,16 +26,16 @@ import (
 )
 
 // forward message to game service
-func forward(s *sessions.Session, header *pb.C2SHeader) error {
+func forward(s *sessions.Session, cmd int32, body []byte) error {
 	if s.Client == nil {
 		return ErrorStreamNotOpen
 	}
 
 	// change Body to C2SHeader, import common in internal.proto
 	frame := pb.Frame{
-		Type:   pb.FrameType_Message,
-		Cmd:    header.Cmd,
-		Header: header,
+		Type: pb.FrameType_Message,
+		Cmd:  cmd,
+		Body: body,
 	}
 
 	select {

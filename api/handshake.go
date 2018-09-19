@@ -23,10 +23,9 @@ package api
 import (
 	"errors"
 
-	"github.com/master-g/gouno/game"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/crypto"
+	"github.com/master-g/gouno/game"
 	"github.com/master-g/gouno/lntime"
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/registry"

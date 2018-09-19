@@ -20,17 +20,31 @@
 
 package game
 
-import "github.com/master-g/gouno/proto/pb"
+import (
+	"github.com/gogo/protobuf/proto"
+	"github.com/master-g/gouno/proto/pb"
+)
 
 var enterGameHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ENTER_GAME_REQ,
 	RespCmd: pb.GameCmd_ENTER_GAME_RSP,
-	Handler: func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error) {
+	Handler: func(c *Client, t *Table, frame pb.Frame) (resp *pb.Frame, err error) {
 		// valid command, clear offline flag
 		c.ClearFlagOffline()
-		// TODO: hideCards should be decided by table
-		// state := t.DumpState(false)
-		return pb.Frame{}, nil
+		// prepare response
+		resp = &pb.Frame{
+			Type: pb.FrameType_Message,
+			Cmd:  int32(pb.GameCmd_ENTER_GAME_RSP),
+		}
+
+		state := t.DumpState(c)
+		resp.Body, err = proto.Marshal(state)
+		if err != nil {
+			resp.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			resp.Message = "unable to marshal proto message"
+		}
+
+		return
 	},
 }
 

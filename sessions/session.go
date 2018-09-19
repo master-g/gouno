@@ -26,8 +26,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/master-g/gouno/game"
 	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/game"
 	"github.com/master-g/gouno/lntime"
 	"github.com/master-g/gouno/proto/pb"
 	"go.uber.org/zap"

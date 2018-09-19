@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/uno"
 	"go.uber.org/zap"
@@ -36,6 +37,13 @@ type TableConfig struct {
 	GameOverDuration time.Duration
 	MinPlayers       int
 	MaxPlayers       int
+	FrameQueueSize   int
+}
+
+// InFrame pair of client and incoming frame
+type InFrame struct {
+	C *Client
+	F *pb.Frame
 }
 
 // Table holds state of an uno game
@@ -62,6 +70,10 @@ type Table struct {
 	Clients []*Client
 	// Register channel for client
 	Register chan *RegisterRequest
+	// InFrames from clients
+	InFrames chan *InFrame
+
+	gameOverTimeout int
 }
 
 var (
@@ -76,34 +88,10 @@ func init() {
 		GameOverDuration: time.Second * 5,
 		MinPlayers:       2,
 		MaxPlayers:       4,
+		FrameQueueSize:   32,
 	}
 
 	tidCounter = uint64(rand.Uint32())
-}
-
-func findAvailableTable() *Table {
-	var result *Table
-	tableMap.Range(func(key, value interface{}) bool {
-		if t, ok := value.(*Table); ok {
-			if !t.Playing && len(t.Clients) < tableConfig.MaxPlayers {
-				result = t
-				return false
-			}
-		}
-		return true
-	})
-
-	return result
-}
-
-func findTable(tid uint64) *Table {
-	if t, ok := tableMap.Load(tid); ok {
-		table, ok := t.(*Table)
-		if ok {
-			return table
-		}
-	}
-	return nil
 }
 
 // NewTable creates and returns pointer to a new table instance
@@ -123,9 +111,9 @@ func (t *Table) String() string {
 	return ""
 }
 
-// DumpState dumps table status and returns in S2CTableState
-func (t Table) DumpState(hideCards bool) *pb.S2CTableState {
-	state := &pb.S2CTableState{
+// DumpState dumps table status and returns in TableState
+func (t Table) DumpState(c *Client) *pb.TableState {
+	state := &pb.TableState{
 		Tid:           t.TID,
 		Playing:       t.Playing,
 		Clockwise:     t.Clockwise,
@@ -141,7 +129,7 @@ func (t Table) DumpState(hideCards bool) *pb.S2CTableState {
 		Players: make([]*pb.UnoPlayer, len(t.States)),
 	}
 	for i, v := range t.States {
-		state.Players[i] = v.Dump(hideCards)
+		state.Players[i] = v.Dump(c.UID == v.UID)
 	}
 	return state
 }
@@ -159,6 +147,26 @@ func (t *Table) registerClient(req *RegisterRequest) {
 	// add state
 	state := NewPlayerState(req.UID)
 	t.States = append(t.States, state)
+
+	// start read pump
+	go func() {
+		for {
+			select {
+			case frame, ok := <-client.In:
+				if !ok {
+					log.Info("client input channel closed")
+					return
+				}
+				t.InFrames <- &InFrame{
+					C: client,
+					F: &frame,
+				}
+			case <-client.Die:
+				log.Info("client die")
+				return
+			}
+		}
+	}()
 
 	// pass client back to agent
 	req.ClientEntry <- client
@@ -182,35 +190,85 @@ func (t *Table) unregisterClient(c *Client) {
 	}
 }
 
+func (t *Table) broadcast(f *pb.Frame) {
+	for _, c := range t.Clients {
+		if !c.IsFlagOfflineSet() {
+			select {
+			case c.Out <- *f:
+			default:
+				// TODO: is this default necessary ?
+				// same reason as router
+			}
+		}
+	}
+}
+
+func (t *Table) newPlayerJoin(uid uint64) {
+	body := &pb.S2CPlayerJoinNty{
+		Uid: uid,
+	}
+	data, err := proto.Marshal(body)
+	if err != nil {
+		log.Error("unable to marshal proto", zap.Error(err))
+		return
+	}
+	frame := &pb.Frame{
+		Type: pb.FrameType_Message,
+		Body: data,
+	}
+	t.broadcast(frame)
+}
+
+func (t *Table) playerLeftTable(uid uint64) {
+	body := &pb.S2CPlayerLeftNty{
+		Uid: uid,
+	}
+	data, err := proto.Marshal(body)
+	if err != nil {
+		log.Error("unable to marshal proto", zap.Error(err))
+		return
+	}
+	frame := &pb.Frame{
+		Type: pb.FrameType_Message,
+		Body: data,
+	}
+	t.broadcast(frame)
+}
+
+func (t *Table) tick() {
+
+}
+
 // table logic loop
 func (t *Table) start(wg *sync.WaitGroup) {
 	t.Register = make(chan *RegisterRequest)
+	t.InFrames = make(chan *InFrame, tableConfig.FrameQueueSize)
 
 	defer func() {
 		close(t.Register)
 		wg.Done()
 	}()
 
+	// tick every second
+	ticker := time.NewTicker(time.Second)
+
 	for {
 		select {
 		case req := <-t.Register:
 			t.registerClient(req)
-			// TODO: table timer logic here
-		}
-
-		// client request read pump
-		for _, c := range t.Clients {
-			select {
-			case frame := <-c.In:
-				route(c, t, frame)
-			}
+			// broadcast new player join
+			t.newPlayerJoin(req.UID)
+		case inFrame := <-t.InFrames:
+			route(inFrame.C, t, *inFrame.F)
+		case <-ticker.C:
+			// state machine here
+			t.tick()
 		}
 
 		// if game is over, remove offline clients
 		if !t.Playing {
 			for _, c := range t.Clients {
 				if c.IsFlagOfflineSet() {
-					// TODO: will there be any bug?
 					t.unregisterClient(c)
 				}
 			}

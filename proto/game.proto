@@ -6,13 +6,15 @@ option go_package = "github.com/master-g/gouno/proto/pb";
 // S -> C : even
 // C -> S : odd
 enum GameCmd {
-    GAME_RESERVED  = 0;      //
-    ENTER_GAME_REQ = 0x2001; // C->S client request to enter a new game or resume an old one
-    ENTER_GAME_RSP = 0x2002; // S->C response to ENTER_GAME
-    ACTION_REQ     = 0x2003; // C->S player take action
-    ACTION_RSP     = 0x2004; // S->C action response
-    EVENT_NTY      = 0x2006; // S->C event broadcast
-    GAME_OVER_NTY  = 0x2008; // S->C game over
+    GAME_RESERVED   = 0;      //
+    ENTER_GAME_REQ  = 0x2001; // C->S client request to enter a new game or resume an old one
+    ENTER_GAME_RSP  = 0x2002; // S->C response to ENTER_GAME
+    ACTION_REQ      = 0x2003; // C->S player take action
+    ACTION_RSP      = 0x2004; // S->C action response
+    EVENT_NTY       = 0x2006; // S->C event broadcast
+    PLAYER_JOIN_NTY = 0x2008; // S->C player join the game notification
+    PLAYER_LEFT_NTY = 0x200A; // S->C player left the game notification
+    GAME_OVER_NTY   = 0x200C; // S->C game over
 }
 
 enum Event {
@@ -52,7 +54,7 @@ message UnoPlayer {
     bytes   cards   = 4; // uno cards
 }
 
-message S2CTableState {
+message TableState {
     fixed64     tid            = 1;  // table id
     bool        playing        = 2;  // is game running
     bool        clockwise      = 3;  // current direction
@@ -63,6 +65,14 @@ message S2CTableState {
     TableConfig table_config   = 8;  // table config
     bytes       cards_played   = 9;  // cards played
     repeated UnoPlayer players = 10; // player list
+}
+
+message S2CPlayerJoinNty {
+    fixed64 uid = 1; // user id
+}
+
+message S2CPlayerLeftNty {
+    fixed64 uid = 1; // user id
 }
 
 message C2SAction {

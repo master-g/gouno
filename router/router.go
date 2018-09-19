@@ -88,7 +88,7 @@ func Route(s *sessions.Session, pkg []byte) (resp []byte) {
 	var ok bool
 	if cmd > pb.Cmd_CMD_COMMON_END {
 		// forward message
-		if err = forward(s, header); err != nil {
+		if err = forward(s, cmdValue, header.Body); err != nil {
 			// error while forwarding
 			log.Error("error while forwarding cmd", zap.String("cmd", cmd.String()), zap.Error(err))
 			s.SetFlagKicked()

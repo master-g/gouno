@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/master-g/gouno/game"
-
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/registry"
 	"github.com/master-g/gouno/router"
@@ -103,7 +102,7 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 				if frame.Status != int32(pb.StatusCode_STATUS_OK) {
 					data = s.ErrorResponse(frame.Cmd, frame.Status, frame.Message)
 				} else {
-					data = s.Response(frame.Cmd, frame.Header.Body)
+					data = s.Response(frame.Cmd, frame.Body)
 				}
 				sendPacket(s, out, data)
 			case pb.FrameType_Kick:

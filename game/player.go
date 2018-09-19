@@ -60,14 +60,14 @@ func NewPlayerState(uid uint64) *PlayerState {
 }
 
 // Dump convert PlayerState to pb.UnoPlayer
-func (p PlayerState) Dump(hideCards bool) *pb.UnoPlayer {
+func (p PlayerState) Dump(showCards bool) *pb.UnoPlayer {
 	state := &pb.UnoPlayer{
 		Uid:     p.UID,
 		Timeout: int32(p.Timeout),
 		Status:  p.Flag,
 		Cards:   make([]uint8, len(p.Cards)),
 	}
-	if !hideCards {
+	if showCards {
 		copy(state.Cards, p.Cards)
 	}
 	return state

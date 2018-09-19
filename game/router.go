@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error)
+type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp *pb.Frame, err error)
 
 // FrameHandler process client frames
 type FrameHandler struct {
@@ -61,11 +61,22 @@ func route(c *Client, t *Table, frame pb.Frame) {
 	if h, ok := handlerMap[frame.Cmd]; ok {
 		resp, err := h.Handler(c, t, frame)
 		if err != nil {
-			log.Info("error while handling cmd", zap.Uint64("uid", c.UID), zap.Uint64("tid", t.TID), zap.Int32("cmd", int32(frame.Cmd)))
-		} else {
-			c.Out <- resp
+			log.Error("error while handling game cmd", zap.String("handler", h.String()), zap.String("req", frame.String()))
 		}
+
+		select {
+		case c.Out <- *resp:
+		default:
+			// TODO: is this default necessary?
+		}
+
 	} else {
 		log.Warn("no handler for cmd", zap.Int32("cmd", frame.Cmd))
+		resp := pb.Frame{
+			Type:    pb.FrameType_Kick,
+			Status:  int32(pb.StatusCode_STATUS_UNKNOWN_CMD),
+			Message: "unknown cmd",
+		}
+		c.Out <- resp
 	}
 }
