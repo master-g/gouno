@@ -36,7 +36,7 @@ enum CardColor {
 }
 
 enum PlayerStatus {
-    STATUS_DEFAULT   = 0x00; // default state
+    STATUS_DEFAULT   = 0;    // default state
     STATUS_UNO       = 0x01; // uno flag
     STATUS_SKIP      = 0x02; // force skip this round
     STATUS_CHALLENGE = 0x04; // player challenge last player's wild draw 4
@@ -48,17 +48,24 @@ message UnoPlayer {
     bytes   cards  = 4; // uno cards
 }
 
+enum TableStatus {
+    STATUS_IDLE      = 0; // table is waiting for more player to start the game
+    STATUS_WAIT      = 1; // game is about to begin in few seconds
+    STATUS_PLAYING   = 2; // game is running
+    STATUS_GAME_OVER = 3; // game is over, will change to IDLE or WAIT in few seconds
+}
+
 message TableState {
-    fixed64  tid               = 1;  // table id
-    bool     playing           = 2;  // is game running
-    int32    timeout           = 3;  // timeout of the stage
-    int32    time_left         = 4;  // time left in seconds
-    bool     clockwise         = 5;  // current direction
-    fixed64  dealer_uid        = 6;  // dealer uid
-    fixed64  last_player       = 7;  // last player
-    fixed64  current_player    = 8;  // current player
-    int32    cards_left        = 9;  // cards left in deck, can be calculated
-    bytes    discard_pile      = 10; // discard pile for played cards
+    fixed64     tid            = 1;  // table id
+    TableStatus status         = 2;  // table status
+    int32       timeout        = 3;  // timeout of the stage
+    int32       time_left      = 4;  // time left in seconds
+    bool        clockwise      = 5;  // current direction
+    fixed64     dealer_uid     = 6;  // dealer uid
+    fixed64     last_player    = 7;  // last player
+    fixed64     current_player = 8;  // current player
+    int32       cards_left     = 9;  // cards left in deck, can be calculated
+    bytes       discard_pile   = 10; // discard pile for played cards
     repeated UnoPlayer players = 11; // player list
 }
 

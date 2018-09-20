@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/uno"
 	"go.uber.org/zap"
@@ -48,10 +48,10 @@ type InFrame struct {
 
 // Stages
 const (
-	StageIdle     = iota // wait for enough players to start the game
-	StageWait            // the game is about to start in few seconds
-	StagePlaying         // the game is running
-	StageGameOver        // the game is just finished yet, will change to wait in few seconds
+	StageIdle     = 0 // wait for enough players to start the game
+	StageWait     = 1 // the game is about to start in few seconds
+	StagePlaying  = 2 // the game is running
+	StageGameOver = 3 // the game is just finished yet, will change to wait in few seconds
 )
 
 // Table holds state of an uno game
@@ -127,7 +127,7 @@ func (t *Table) String() string {
 func (t Table) DumpState(c *Client) *pb.TableState {
 	state := &pb.TableState{
 		Tid:           t.TID,
-		Playing:       t.Stage != StageIdle,
+		Status:        pb.TableStatus(t.Stage),
 		Timeout:       int32(t.Timeout),
 		TimeLeft:      int32(t.TimeLeft),
 		Clockwise:     t.Clockwise,
