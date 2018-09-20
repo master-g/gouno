@@ -33,11 +33,13 @@ import (
 
 // TableConfig holds table timeout configs
 type TableConfig struct {
-	TurnTimeout      time.Duration
-	GameOverDuration time.Duration
-	MinPlayers       int
-	MaxPlayers       int
-	FrameQueueSize   int
+	TurnTimeout     int // timeout of a turn
+	GameOverTimeout int // timeout of game over
+	IdleTimeout     int // timeout before adding bots
+	WaitTimeout     int // timeout before starting a game
+	MinPlayers      int
+	MaxPlayers      int
+	FrameQueueSize  int
 }
 
 // InFrame pair of client and incoming frame
@@ -96,11 +98,13 @@ var (
 
 func init() {
 	tableConfig = TableConfig{
-		TurnTimeout:      time.Second * 10,
-		GameOverDuration: time.Second * 5,
-		MinPlayers:       2,
-		MaxPlayers:       4,
-		FrameQueueSize:   32,
+		TurnTimeout:     10,
+		GameOverTimeout: 5,
+		IdleTimeout:     30,
+		WaitTimeout:     3,
+		MinPlayers:      2,
+		MaxPlayers:      4,
+		FrameQueueSize:  32,
 	}
 
 	tidCounter = uint64(rand.Uint32())
@@ -200,11 +204,24 @@ func (t *Table) unregisterClient(c *Client) {
 	}
 }
 
-func (t *Table) broadcast(f *pb.Frame) {
+func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		log.Error("unable to marshal proto msg", zap.Error(err))
+		return
+	}
+
+	frame := &pb.Frame{
+		Cmd:    int32(cmd),
+		Status: int32(pb.StatusCode_STATUS_OK),
+		Type:   pb.FrameType_Message,
+		Body:   data,
+	}
+
 	for _, c := range t.Clients {
 		if !c.IsFlagOfflineSet() {
 			select {
-			case c.Out <- *f:
+			case c.Out <- *frame:
 			default:
 				// TODO: is this default necessary ?
 				// same reason as router
@@ -213,40 +230,52 @@ func (t *Table) broadcast(f *pb.Frame) {
 	}
 }
 
-func (t *Table) newPlayerJoin(uid uint64) {
-	body := &pb.S2CPlayerJoinNty{
-		Uid: uid,
-	}
-	data, err := proto.Marshal(body)
-	if err != nil {
-		log.Error("unable to marshal proto", zap.Error(err))
+func (t *Table) changeStage(toStage int) {
+	if t.Stage == toStage {
+		log.Error("change to same stage")
 		return
 	}
-	frame := &pb.Frame{
-		Type: pb.FrameType_Message,
-		Body: data,
+	switch toStage {
+	case StageIdle:
+		t.Timeout = tableConfig.IdleTimeout
+	case StageWait:
+		t.Timeout = tableConfig.WaitTimeout
+	case StagePlaying:
+		t.Timeout = tableConfig.TurnTimeout
+	case StageGameOver:
+		t.Timeout = tableConfig.GameOverTimeout
+	default:
+		log.Error("no such stage", zap.Int("tostage", toStage))
 	}
-	t.broadcast(frame)
+	t.TimeLeft = t.Timeout
 }
 
-func (t *Table) playerLeftTable(uid uint64) {
-	body := &pb.S2CPlayerLeftNty{
-		Uid: uid,
+func (t *Table) updateStageForPlayerJoinOrLeave() {
+	if len(t.Clients) >= tableConfig.MinPlayers && t.Stage == StageIdle {
+		t.changeStage(StageWait)
+	} else if len(t.Clients) < tableConfig.MinPlayers && t.Stage != StageIdle {
+		t.changeStage(StageIdle)
 	}
-	data, err := proto.Marshal(body)
-	if err != nil {
-		log.Error("unable to marshal proto", zap.Error(err))
-		return
-	}
-	frame := &pb.Frame{
-		Type: pb.FrameType_Message,
-		Body: data,
-	}
-	t.broadcast(frame)
 }
 
 func (t *Table) tick() {
-
+	t.TimeLeft--
+	switch t.Stage {
+	case StageIdle:
+		if t.TimeLeft <= 0 {
+			if len(t.Clients) < tableConfig.MinPlayers {
+				// TODO: add bots here
+			}
+		}
+	case StageGameOver:
+		if t.TimeLeft <= 0 {
+			t.changeStage(StageWait)
+		}
+	case StageWait:
+		if t.TimeLeft <= 0 {
+			// TODO: start new game
+		}
+	}
 }
 
 // table logic loop
@@ -267,7 +296,11 @@ func (t *Table) start(wg *sync.WaitGroup) {
 		case req := <-t.Register:
 			t.registerClient(req)
 			// broadcast new player join
-			t.newPlayerJoin(req.UID)
+			t.broadcast(pb.GameCmd_PLAYER_JOIN_NTY, &pb.S2CPlayerJoinNty{
+				Uid: req.UID,
+			})
+			// change stage if there are enough players to start a new game
+			t.updateStageForPlayerJoinOrLeave()
 		case inFrame := <-t.InFrames:
 			route(inFrame.C, t, *inFrame.F)
 		case <-ticker.C:
@@ -280,8 +313,13 @@ func (t *Table) start(wg *sync.WaitGroup) {
 			for _, c := range t.Clients {
 				if c.IsFlagOfflineSet() {
 					t.unregisterClient(c)
+					t.broadcast(pb.GameCmd_PLAYER_LEFT_NTY, &pb.S2CPlayerLeftNty{
+						Uid: c.UID,
+					})
 				}
 			}
+			// change stage to idle if there are no enough player
+			t.updateStageForPlayerJoinOrLeave()
 		}
 	}
 }
