@@ -31,10 +31,9 @@ const (
 
 // PlayerState holds player status, for it is more related to table not client
 type PlayerState struct {
-	UID     uint64  // uid
-	Timeout int     // seconds to timeout
-	Flag    int32   // flags
-	Cards   []uint8 // cards
+	UID   uint64  // uid
+	Flag  int32   // flags
+	Cards []uint8 // cards
 }
 
 // IsFlagSet returns true if flag is set
@@ -62,10 +61,9 @@ func NewPlayerState(uid uint64) *PlayerState {
 // Dump convert PlayerState to pb.UnoPlayer
 func (p PlayerState) Dump(showCards bool) *pb.UnoPlayer {
 	state := &pb.UnoPlayer{
-		Uid:     p.UID,
-		Timeout: int32(p.Timeout),
-		Status:  p.Flag,
-		Cards:   make([]uint8, len(p.Cards)),
+		Uid:    p.UID,
+		Status: p.Flag,
+		Cards:  make([]uint8, len(p.Cards)),
 	}
 	if showCards {
 		copy(state.Cards, p.Cards)

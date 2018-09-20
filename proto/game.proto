@@ -42,29 +42,24 @@ enum PlayerStatus {
     STATUS_CHALLENGE = 0x04; // player challenge last player's wild draw 4
 }
 
-message TableConfig {
-    int32 turn_timeout       = 1; // turn timeout, in seconds
-    int32 game_over_duration = 2; // game over interval before start next game
-}
-
 message UnoPlayer {
-    fixed64 uid     = 1; // user id
-    int32   timeout = 2; // timeout, in seconds
-    int32   status  = 3; // status flag
-    bytes   cards   = 4; // uno cards
+    fixed64 uid    = 1; // user id
+    int32   status = 3; // status flag
+    bytes   cards  = 4; // uno cards
 }
 
 message TableState {
-    fixed64     tid            = 1;  // table id
-    bool        playing        = 2;  // is game running
-    bool        clockwise      = 3;  // current direction
-    fixed64     dealer_uid     = 4;  // dealer uid
-    fixed64     last_player    = 5;  // last player
-    fixed64     current_player = 6;  // current player
-    int32       cards_left     = 7;  // cards left in deck, can be calculated
-    TableConfig table_config   = 8;  // table config
-    bytes       cards_played   = 9;  // cards played
-    repeated UnoPlayer players = 10; // player list
+    fixed64  tid               = 1;  // table id
+    bool     playing           = 2;  // is game running
+    int32    timeout           = 3;  // timeout of the stage
+    int32    time_left         = 4;  // time left in seconds
+    bool     clockwise         = 5;  // current direction
+    fixed64  dealer_uid        = 6;  // dealer uid
+    fixed64  last_player       = 7;  // last player
+    fixed64  current_player    = 8;  // current player
+    int32    cards_left        = 9;  // cards left in deck, can be calculated
+    bytes    discard_pile      = 10; // discard pile for played cards
+    repeated UnoPlayer players = 11; // player list
 }
 
 message S2CPlayerJoinNty {

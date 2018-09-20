@@ -120,7 +120,7 @@ func findAvailableTable() *Table {
 	var result *Table
 	tableMap.Range(func(key, value interface{}) bool {
 		if t, ok := value.(*Table); ok {
-			if !t.Playing && len(t.Clients) < tableConfig.MaxPlayers {
+			if t.Stage == StageIdle && len(t.Clients) < tableConfig.MaxPlayers {
 				result = t
 				return false
 			}

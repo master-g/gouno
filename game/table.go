@@ -46,12 +46,20 @@ type InFrame struct {
 	F *pb.Frame
 }
 
+// Stages
+const (
+	StageIdle     = iota // wait for enough players to start the game
+	StageWait            // the game is about to start in few seconds
+	StagePlaying         // the game is running
+	StageGameOver        // the game is just finished yet, will change to wait in few seconds
+)
+
 // Table holds state of an uno game
 type Table struct {
 	// TID table ID
 	TID uint64
-	// Playing indicates the game is running
-	Playing bool
+	// Stage see stage constants
+	Stage int
 	// Clockwise indicates the current order is clockwise, otherwise CCW
 	Clockwise bool
 	// Dealer UID of the dealer
@@ -64,6 +72,10 @@ type Table struct {
 	Deck *uno.Deck
 	// Discard holds uno cards that has been discard
 	Discard []uint8
+	// Timeout for the stage, in seconds
+	Timeout int
+	// TimeLeft for seconds left
+	TimeLeft int
 	// States array of player state
 	States []*PlayerState
 	// Clients array of clients
@@ -99,7 +111,7 @@ func NewTable() *Table {
 	tidCounter++
 	table := &Table{
 		TID:       tidCounter,
-		Playing:   false,
+		Stage:     StageIdle,
 		Clockwise: true,
 		Deck:      uno.NewDeck(),
 	}
@@ -115,18 +127,16 @@ func (t *Table) String() string {
 func (t Table) DumpState(c *Client) *pb.TableState {
 	state := &pb.TableState{
 		Tid:           t.TID,
-		Playing:       t.Playing,
+		Playing:       t.Stage != StageIdle,
+		Timeout:       int32(t.Timeout),
+		TimeLeft:      int32(t.TimeLeft),
 		Clockwise:     t.Clockwise,
 		DealerUid:     t.Dealer,
 		LastPlayer:    t.LastPlayer,
 		CurrentPlayer: t.CurrentPlayer,
 		CardsLeft:     int32(t.Deck.CardsRemaining()),
-		CardsPlayed:   t.Discard,
-		TableConfig: &pb.TableConfig{
-			TurnTimeout:      int32(tableConfig.TurnTimeout.Seconds()),
-			GameOverDuration: int32(tableConfig.GameOverDuration.Seconds()),
-		},
-		Players: make([]*pb.UnoPlayer, len(t.States)),
+		DiscardPile:   t.Discard,
+		Players:       make([]*pb.UnoPlayer, len(t.States)),
 	}
 	for i, v := range t.States {
 		state.Players[i] = v.Dump(c.UID == v.UID)
@@ -266,7 +276,7 @@ func (t *Table) start(wg *sync.WaitGroup) {
 		}
 
 		// if game is over, remove offline clients
-		if !t.Playing {
+		if t.Stage != StagePlaying {
 			for _, c := range t.Clients {
 				if c.IsFlagOfflineSet() {
 					t.unregisterClient(c)
