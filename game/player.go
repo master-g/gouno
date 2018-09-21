@@ -20,7 +20,10 @@
 
 package game
 
-import "github.com/master-g/gouno/proto/pb"
+import (
+	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/proto/pb"
+)
 
 // Player status
 const (
@@ -58,15 +61,25 @@ func NewPlayerState(uid uint64) *PlayerState {
 	}
 }
 
+// HideCardsForUID will hide other player's cards for player with given uid
+func HideCardsForUID(state *pb.TableState, uid uint64) *pb.TableState {
+	newState := proto.Clone(state).(*pb.TableState)
+	for _, player := range newState.Players {
+		if player.Uid != uid {
+			player.Cards = make([]uint8, len(player.Cards))
+		}
+	}
+
+	return newState
+}
+
 // Dump convert PlayerState to pb.UnoPlayer
-func (p PlayerState) Dump(showCards bool) *pb.UnoPlayer {
+func (p PlayerState) Dump() *pb.UnoPlayer {
 	state := &pb.UnoPlayer{
 		Uid:    p.UID,
 		Status: p.Flag,
 		Cards:  make([]uint8, len(p.Cards)),
 	}
-	if showCards {
-		copy(state.Cards, p.Cards)
-	}
+	copy(state.Cards, p.Cards)
 	return state
 }

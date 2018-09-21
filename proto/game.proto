@@ -14,7 +14,8 @@ enum GameCmd {
     EVENT_NTY       = 0x2006; // S->C event broadcast
     PLAYER_JOIN_NTY = 0x2008; // S->C player join the game notification
     PLAYER_LEFT_NTY = 0x200A; // S->C player left the game notification
-    GAME_OVER_NTY   = 0x200C; // S->C game over
+    GAME_START_NTY  = 0x200C; // S->C game start notification
+    GAME_OVER_NTY   = 0x200E; // S->C game over
 }
 
 enum Event {
@@ -61,12 +62,11 @@ message TableState {
     int32       timeout        = 3;  // timeout of the stage
     int32       time_left      = 4;  // time left in seconds
     bool        clockwise      = 5;  // current direction
-    fixed64     dealer_uid     = 6;  // dealer uid
-    fixed64     last_player    = 7;  // last player
-    fixed64     current_player = 8;  // current player
-    int32       cards_left     = 9;  // cards left in deck, can be calculated
-    bytes       discard_pile   = 10; // discard pile for played cards
-    repeated UnoPlayer players = 11; // player list
+    fixed64     last_player    = 6;  // last player
+    fixed64     current_player = 7;  // current player
+    int32       cards_left     = 8;  // cards left in deck, can be calculated
+    bytes       discard_pile   = 9;  // discard pile for played cards
+    repeated UnoPlayer players = 10; // player list
 }
 
 message S2CPlayerJoinNty {

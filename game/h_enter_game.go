@@ -37,7 +37,7 @@ var enterGameHandler = &FrameHandler{
 			Cmd:  int32(pb.GameCmd_ENTER_GAME_RSP),
 		}
 
-		state := t.DumpState(c)
+		state := HideCardsForUID(t.DumpState(), c.UID)
 		resp.Body, err = proto.Marshal(state)
 		if err != nil {
 			resp.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)

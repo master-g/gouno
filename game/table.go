@@ -37,6 +37,7 @@ type TableConfig struct {
 	GameOverTimeout int // timeout of game over
 	IdleTimeout     int // timeout before adding bots
 	WaitTimeout     int // timeout before starting a game
+	PrepareTimeout  int // timeout before playing
 	MinPlayers      int
 	MaxPlayers      int
 	FrameQueueSize  int
@@ -54,6 +55,7 @@ const (
 	StageWait     = 1 // the game is about to start in few seconds
 	StagePlaying  = 2 // the game is running
 	StageGameOver = 3 // the game is just finished yet, will change to wait in few seconds
+	StagePrepare  = 4 // hidden stage for client to show the game start animations, will change to StagePlaying in a few seconds
 )
 
 // Table holds state of an uno game
@@ -64,8 +66,6 @@ type Table struct {
 	Stage int
 	// Clockwise indicates the current order is clockwise, otherwise CCW
 	Clockwise bool
-	// Dealer UID of the dealer
-	Dealer uint64
 	// LastPlayer UID of last player
 	LastPlayer uint64
 	// CurrentPlayer UID of current player
@@ -118,6 +118,7 @@ func NewTable() *Table {
 		Stage:     StageIdle,
 		Clockwise: true,
 		Deck:      uno.NewDeck(),
+		Discard:   make([]uint8, 0, uno.CardSetSize),
 	}
 	tableMap.Store(table.TID, table)
 	return table
@@ -128,22 +129,21 @@ func (t *Table) String() string {
 }
 
 // DumpState dumps table status and returns in TableState
-func (t Table) DumpState(c *Client) *pb.TableState {
+func (t Table) DumpState() *pb.TableState {
 	state := &pb.TableState{
 		Tid:           t.TID,
 		Status:        pb.TableStatus(t.Stage),
 		Timeout:       int32(t.Timeout),
 		TimeLeft:      int32(t.TimeLeft),
 		Clockwise:     t.Clockwise,
-		DealerUid:     t.Dealer,
 		LastPlayer:    t.LastPlayer,
 		CurrentPlayer: t.CurrentPlayer,
 		CardsLeft:     int32(t.Deck.CardsRemaining()),
 		DiscardPile:   t.Discard,
 		Players:       make([]*pb.UnoPlayer, len(t.States)),
 	}
-	for i, v := range t.States {
-		state.Players[i] = v.Dump(c.UID == v.UID)
+	for i, playerState := range t.States {
+		state.Players[i] = playerState.Dump()
 	}
 	return state
 }
@@ -219,12 +219,40 @@ func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
 	}
 
 	for _, c := range t.Clients {
+		// TODO: is this offline flag really necessary in here ?
 		if !c.IsFlagOfflineSet() {
 			select {
 			case c.Out <- *frame:
 			default:
 				// TODO: is this default necessary ?
 				// same reason as router
+			}
+		}
+	}
+}
+
+// this is a bit different from broadcast, since one player cannot see other player's cards
+func (t *Table) notifyGameStart() {
+	state := t.DumpState()
+	for _, c := range t.Clients {
+		newState := HideCardsForUID(state, c.UID)
+		data, err := proto.Marshal(newState)
+		if err != nil {
+			log.Error("unable to marshal proto msg", zap.Error(err))
+			return
+		}
+
+		frame := &pb.Frame{
+			Cmd:    int32(pb.GameCmd_GAME_START_NTY),
+			Status: int32(pb.StatusCode_STATUS_OK),
+			Type:   pb.FrameType_Message,
+			Body:   data,
+		}
+
+		if !c.IsFlagOfflineSet() {
+			select {
+			case c.Out <- *frame:
+			default:
 			}
 		}
 	}
@@ -245,7 +273,7 @@ func (t *Table) changeStage(toStage int) {
 	case StageGameOver:
 		t.Timeout = tableConfig.GameOverTimeout
 	default:
-		log.Error("no such stage", zap.Int("tostage", toStage))
+		log.Error("no such stage", zap.Int("toStage", toStage))
 	}
 	t.TimeLeft = t.Timeout
 }
@@ -258,13 +286,53 @@ func (t *Table) updateStageForPlayerJoinOrLeave() {
 	}
 }
 
+func (t *Table) dealInitialCards() {
+	var err error
+	defer func() {
+		if err != nil {
+			log.Error("no enough cards to start a new game")
+		}
+	}()
+
+	// deal player cards
+	for _, playerState := range t.States {
+		playerState.Cards, err = t.Deck.Deal7()
+		if err != nil {
+			return
+		}
+	}
+	// deal first card
+	t.Discard = t.Discard[:1]
+	t.Discard[0], err = t.Deck.Deal()
+}
+
+func (t *Table) newGame() {
+	// reset deck
+	t.Deck.Reset()
+	// choose player
+	if t.CurrentPlayer == 0 {
+		// completely new game
+		t.CurrentPlayer = t.Clients[rand.Intn(len(t.Clients))].UID
+	} else {
+		for i, c := range t.Clients {
+			if c.UID == t.CurrentPlayer {
+				t.CurrentPlayer = t.Clients[(i+1)%len(t.Clients)].UID
+				break
+			}
+		}
+	}
+	// deal cards to each player, and deal first card
+	t.dealInitialCards()
+}
+
 func (t *Table) tick() {
 	t.TimeLeft--
 	switch t.Stage {
 	case StageIdle:
 		if t.TimeLeft <= 0 {
 			if len(t.Clients) < tableConfig.MinPlayers {
-				// TODO: add bots here
+				// add bot
+				AddBot(t)
 			}
 		}
 	case StageGameOver:
@@ -273,7 +341,9 @@ func (t *Table) tick() {
 		}
 	case StageWait:
 		if t.TimeLeft <= 0 {
-			// TODO: start new game
+			t.newGame()
+			t.changeStage(StagePlaying)
+			t.notifyGameStart()
 		}
 	}
 }

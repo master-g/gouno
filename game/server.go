@@ -61,48 +61,9 @@ func Start() {
 	for {
 		select {
 		case req := <-Register:
-			var table *Table
-			if prev, ok := clients.Load(req.UID); ok {
-				prevClient, ok := prev.(*Client)
-				if ok {
-					// previous client found, try to find the related table
-					log.Info("prev client found", zap.String("client", prevClient.String()))
-					table = findTable(prevClient.TID)
-					if table != nil {
-						// previous table found
-						req.ClientEntry <- prevClient
-					} else {
-						// previous table not found, error, need fix if this happens
-						log.Error("client with dangling table", zap.String("client", prevClient.String()))
-					}
-				} else {
-					log.Error("unable to convert *client")
-				}
-			} else {
-				// no previous client, start new goroutine
-				table = findAvailableTable()
-				if table == nil {
-					// no available table, create new one
-					table = NewTable()
-					log.Info("new table created", zap.String("table", table.String()))
-					wg.Add(1)
-					go table.start(&wg)
-				}
-				// create new client in table loop
-				table.Register <- req
-			}
+			registerClient(req)
 		case uid := <-Unregister:
-			if v, ok := clients.Load(uid); ok {
-				// set offline flag, the real removal will be done in another goroutine
-				client, ok := v.(*Client)
-				if !ok {
-					log.Error("unable to convert *client")
-				} else {
-					client.SetFlagOffline()
-				}
-			} else {
-				log.Warn("try to unregister non exists client", zap.Uint64("uid", uid))
-			}
+			unregisterClient(uid)
 		case <-signal.InterruptChan:
 			log.Info("shutting down game server")
 			return
@@ -114,6 +75,53 @@ func Start() {
 func WaitGameServerShutdown() {
 	// wait for all tables to tear down
 	wg.Wait()
+}
+
+func registerClient(req *RegisterRequest) {
+	var table *Table
+	if prev, ok := clients.Load(req.UID); ok {
+		prevClient, ok := prev.(*Client)
+		if ok {
+			// previous client found, try to find the related table
+			log.Info("prev client found", zap.String("client", prevClient.String()))
+			table = findTable(prevClient.TID)
+			if table != nil {
+				// previous table found
+				req.ClientEntry <- prevClient
+			} else {
+				// previous table not found, error, need fix if this happens
+				log.Error("client with dangling table", zap.String("client", prevClient.String()))
+			}
+		} else {
+			log.Error("unable to convert *client")
+		}
+	} else {
+		// no previous client, start new goroutine
+		table = findAvailableTable()
+		if table == nil {
+			// no available table, create new one
+			table = NewTable()
+			log.Info("new table created", zap.String("table", table.String()))
+			wg.Add(1)
+			go table.start(&wg)
+		}
+		// create new client in table loop
+		table.Register <- req
+	}
+}
+
+func unregisterClient(uid uint64) {
+	if v, ok := clients.Load(uid); ok {
+		// set offline flag, the real removal will be done in another goroutine
+		client, ok := v.(*Client)
+		if !ok {
+			log.Error("unable to convert *client")
+		} else {
+			client.SetFlagOffline()
+		}
+	} else {
+		log.Warn("try to unregister non exists client", zap.Uint64("uid", uid))
+	}
 }
 
 func findAvailableTable() *Table {
