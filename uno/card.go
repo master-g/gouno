@@ -148,8 +148,9 @@ var (
 
 // Deck holds a full set of uno cards
 type Deck struct {
-	index int
-	cards []uint8
+	index    int
+	shuffled bool
+	cards    []uint8
 }
 
 // NewDeck creates and returns pointer to a new Deck object
@@ -161,6 +162,15 @@ func NewDeck() *Deck {
 	return deck
 }
 
+// Reset deck to initial state
+func (d *Deck) Reset() {
+	d.index = 0
+	if d.shuffled {
+		copy(d.cards, cardPreset)
+		d.shuffled = false
+	}
+}
+
 // Deal a single card from deck, if the deck is empty, a 0 will be returned
 func (d *Deck) Deal() (c uint8, err error) {
 	if d.index >= len(d.cards) {
@@ -169,6 +179,22 @@ func (d *Deck) Deal() (c uint8, err error) {
 	}
 	c = d.cards[d.index]
 	d.index++
+	// shuffle the rest of the cards
+	return
+}
+
+// DealFirstCard deals a random card except wild draw 4 card from deck
+func (d *Deck) DealFirstCard() (c uint8) {
+	// reset cards first
+	d.Reset()
+	// no wild draw 4 cards
+	index := rand.Intn(CardSetSize - 4)
+	// swap index with first card in the deck
+	d.cards[0], d.cards[index] = d.cards[index], d.cards[0]
+	c = d.cards[0]
+	d.index++
+	// shuffle the rest of cards
+	d.Shuffle(1)
 	return
 }
 
@@ -197,18 +223,13 @@ func (d *Deck) Deal7() (c []uint8, err error) {
 	return d.deals(7)
 }
 
-// Reset deck
-func (d *Deck) Reset() {
-	d.index = 0
-	d.Shuffle()
-}
-
 // Shuffle cards in deck
-func (d *Deck) Shuffle() {
-	for i := len(d.cards) - 1; i > 0; i-- {
+func (d *Deck) Shuffle(since int) {
+	for i := len(d.cards) - 1; i > since; i-- {
 		j := rand.Intn(i + 1)
 		d.cards[i], d.cards[j] = d.cards[j], d.cards[i]
 	}
+	d.shuffled = true
 }
 
 // CardsRemaining returns the number of available cards in deck

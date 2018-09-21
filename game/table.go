@@ -102,6 +102,7 @@ func init() {
 		GameOverTimeout: 5,
 		IdleTimeout:     30,
 		WaitTimeout:     3,
+		PrepareTimeout:  3,
 		MinPlayers:      2,
 		MaxPlayers:      4,
 		FrameQueueSize:  32,
@@ -234,6 +235,8 @@ func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
 // this is a bit different from broadcast, since one player cannot see other player's cards
 func (t *Table) notifyGameStart() {
 	state := t.DumpState()
+	// manually set the status to playing, since the actual table status is prepare
+	state.Status = pb.TableStatus_STATUS_PLAYING
 	for _, c := range t.Clients {
 		newState := HideCardsForUID(state, c.UID)
 		data, err := proto.Marshal(newState)
@@ -268,6 +271,8 @@ func (t *Table) changeStage(toStage int) {
 		t.Timeout = tableConfig.IdleTimeout
 	case StageWait:
 		t.Timeout = tableConfig.WaitTimeout
+	case StagePrepare:
+		t.Timeout = tableConfig.PrepareTimeout
 	case StagePlaying:
 		t.Timeout = tableConfig.TurnTimeout
 	case StageGameOver:
@@ -278,6 +283,9 @@ func (t *Table) changeStage(toStage int) {
 	t.TimeLeft = t.Timeout
 }
 
+// updateStageForPlayerJoinOrLeave update stage if there is a player join or leave the game
+// 1. player join might trigger game to start
+// 2. player leave might trigger game to idle
 func (t *Table) updateStageForPlayerJoinOrLeave() {
 	if len(t.Clients) >= tableConfig.MinPlayers && t.Stage == StageIdle {
 		t.changeStage(StageWait)
@@ -286,6 +294,7 @@ func (t *Table) updateStageForPlayerJoinOrLeave() {
 	}
 }
 
+// dealInitialCards deals first card and 7 cards for each player
 func (t *Table) dealInitialCards() {
 	var err error
 	defer func() {
@@ -294,21 +303,20 @@ func (t *Table) dealInitialCards() {
 		}
 	}()
 
-	// deal player cards
+	// deal first card, must be non wild draw 4
+	t.Discard = t.Discard[:1]
+	t.Discard[0] = t.Deck.DealFirstCard()
+
+	// deal 7 cards to each player
 	for _, playerState := range t.States {
 		playerState.Cards, err = t.Deck.Deal7()
 		if err != nil {
 			return
 		}
 	}
-	// deal first card
-	t.Discard = t.Discard[:1]
-	t.Discard[0], err = t.Deck.Deal()
 }
 
 func (t *Table) newGame() {
-	// reset deck
-	t.Deck.Reset()
 	// choose player
 	if t.CurrentPlayer == 0 {
 		// completely new game
@@ -342,8 +350,12 @@ func (t *Table) tick() {
 	case StageWait:
 		if t.TimeLeft <= 0 {
 			t.newGame()
-			t.changeStage(StagePlaying)
+			t.changeStage(StagePrepare)
 			t.notifyGameStart()
+		}
+	case StagePrepare:
+		if t.TimeLeft <= 0 {
+			t.changeStage(StagePlaying)
 		}
 	}
 }
@@ -379,7 +391,7 @@ func (t *Table) start(wg *sync.WaitGroup) {
 		}
 
 		// if game is over, remove offline clients
-		if t.Stage != StagePlaying {
+		if t.Stage == StageGameOver {
 			for _, c := range t.Clients {
 				if c.IsFlagOfflineSet() {
 					t.unregisterClient(c)
