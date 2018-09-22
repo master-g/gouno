@@ -19,14 +19,15 @@ enum GameCmd {
 }
 
 enum Event {
-    EVENT_PLAY              = 0; // player play card
-    EVENT_UNO_PLAY          = 1; // player play card and say uno
-    EVENT_DRAW              = 2; // player draw cards from deck
-    EVENT_SKIP              = 3; // player skip
-    EVENT_CHALLENGE         = 4; // player challenge last player's wild+4 card
-    EVENT_CHALLENGE_PENALTY = 5; // player challenge success or failed
-    EVENT_TIMEOUT           = 6; // player timeout
-    EVENT_DECK_SHUFFLE      = 7; // deck ran out, re-shuffle
+    EVENT_TURN              = 0; // player's turn
+    EVENT_PLAY              = 1; // player play card
+    EVENT_UNO_PLAY          = 2; // player play card and say uno
+    EVENT_DRAW              = 3; // player draw cards from deck
+    EVENT_SKIP              = 4; // player skip
+    EVENT_CHALLENGE         = 5; // player challenge last player's wild+4 card
+    EVENT_CHALLENGE_PENALTY = 6; // player challenge success or failed
+    EVENT_TIMEOUT           = 7; // player timeout
+    EVENT_DECK_SHUFFLE      = 8; // deck ran out, re-shuffle
 }
 
 enum CardColor {
