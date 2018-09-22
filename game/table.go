@@ -357,6 +357,10 @@ func (t *Table) tick() {
 	case StagePrepare:
 		if t.TimeLeft <= 0 {
 			t.changeStage(StagePlaying)
+			t.broadcast(pb.GameCmd_EVENT_NTY, &pb.S2CEventNty{
+				Uid:   t.CurrentPlayer,
+				Event: int32(pb.Event_EVENT_TURN),
+			})
 		}
 	case StagePlaying:
 		// TODO: player timeout logic here
