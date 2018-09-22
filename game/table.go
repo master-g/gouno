@@ -339,7 +339,8 @@ func (t *Table) tick() {
 	case StageIdle:
 		if t.TimeLeft <= 0 {
 			if len(t.Clients) < tableConfig.MinPlayers {
-				// add bot
+				// add bot, will register a bot client to the table
+				// and the table stage will be changed in updateStageForPlayerJoinOrLeave()
 				AddBot(t)
 			}
 		}
@@ -357,6 +358,8 @@ func (t *Table) tick() {
 		if t.TimeLeft <= 0 {
 			t.changeStage(StagePlaying)
 		}
+	case StagePlaying:
+		// TODO: player timeout logic here
 	}
 }
 
