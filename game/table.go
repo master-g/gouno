@@ -33,14 +33,16 @@ import (
 
 // TableConfig holds table timeout configs
 type TableConfig struct {
-	TurnTimeout     int // timeout of a turn
-	GameOverTimeout int // timeout of game over
-	IdleTimeout     int // timeout before adding bots
-	WaitTimeout     int // timeout before starting a game
-	PrepareTimeout  int // timeout before playing
-	MinPlayers      int
-	MaxPlayers      int
-	FrameQueueSize  int
+	TurnTimeout           int // timeout of a turn
+	GameOverTimeout       int // timeout of game over
+	IdleTimeout           int // timeout before adding bots
+	WaitTimeout           int // timeout before starting a game
+	PrepareTimeout        int // timeout before playing
+	AIAssistantMinTimeout int // minimum timeout for AI to kick in
+	AIAssistantMaxTimeout int // maximum timeout for AI to kick in
+	MinPlayers            int // minimum players to start the game
+	MaxPlayers            int // maximum players a game can play with
+	FrameQueueSize        int // input frame queue size
 }
 
 // InFrame pair of client and incoming frame
@@ -91,24 +93,35 @@ type Table struct {
 }
 
 var (
-	tidCounter  uint64 // no need for atomic, since we only access it in game's goroutine
-	tableMap    sync.Map
-	tableConfig TableConfig
+	tidCounter         uint64 // no need for atomic, since we only access it in game's goroutine
+	tableMap           sync.Map
+	tableConfig        *TableConfig
+	defaultTableConfig = &TableConfig{
+		TurnTimeout:           10,
+		GameOverTimeout:       5,
+		IdleTimeout:           30,
+		WaitTimeout:           3,
+		PrepareTimeout:        3,
+		AIAssistantMinTimeout: 1,
+		AIAssistantMaxTimeout: 6,
+		MinPlayers:            2,
+		MaxPlayers:            4,
+		FrameQueueSize:        32,
+	}
 )
 
 func init() {
-	tableConfig = TableConfig{
-		TurnTimeout:     10,
-		GameOverTimeout: 5,
-		IdleTimeout:     30,
-		WaitTimeout:     3,
-		PrepareTimeout:  3,
-		MinPlayers:      2,
-		MaxPlayers:      4,
-		FrameQueueSize:  32,
-	}
-
+	tableConfig = defaultTableConfig
 	tidCounter = uint64(rand.Uint32())
+}
+
+// SetTableConfig from outside
+func SetTableConfig(config *TableConfig) {
+	if config == nil {
+		tableConfig = defaultTableConfig
+	} else {
+		tableConfig = config
+	}
 }
 
 // NewTable creates and returns pointer to a new table instance
@@ -363,7 +376,13 @@ func (t *Table) tick() {
 			})
 		}
 	case StagePlaying:
-		// TODO: player timeout logic here
+		if t.TimeLeft <= 0 {
+			// TODO: player timeout logic here
+			// 1. add timeout flag to client or playerStatus
+			// 2. check if timeout flag is set
+			// 3. if set, check AI assistant timeout
+			// 4. if not set, set the flag, and set timeout for AI assistant
+		}
 	}
 }
 
