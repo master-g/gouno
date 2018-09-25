@@ -67,7 +67,7 @@ func route(c *Client, t *Table, frame pb.Frame) {
 		select {
 		case c.Out <- *resp:
 		default:
-			// TODO: is this default necessary?
+			// TODO: is this default necessary ?
 		}
 
 	} else {

@@ -34,7 +34,7 @@ type Config struct {
 
 var config *Config
 
-// InitConfig setup server configuration
-func InitConfig(cfg *Config) {
+// SetConfig setup server configuration
+func SetConfig(cfg *Config) {
 	config = cfg
 }

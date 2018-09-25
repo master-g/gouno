@@ -38,6 +38,16 @@ import (
 
 var paramList = []config.Flag{
 	{Name: "debug", Type: config.Bool, Shorthand: "", Value: false, Usage: "debug mode flag"},
+	{Name: "game.turn-timeout", Type: config.Int, Shorthand: "", Value: 10, Usage: "timeout of a turn"},
+	{Name: "game.gameover-timeout", Type: config.Int, Shorthand: "", Value: 5, Usage: "timeout of game over"},
+	{Name: "game.idle-timeout", Type: config.Int, Shorthand: "", Value: 30, Usage: "timeout before adding bots"},
+	{Name: "game.Wait-timeout", Type: config.Int, Shorthand: "", Value: 3, Usage: "timeout before starting a game"},
+	{Name: "game.prepare-timeout", Type: config.Int, Shorthand: "", Value: 3, Usage: "timeout before playing"},
+	{Name: "game.ai-assistant-min-timeout", Type: config.Int, Shorthand: "", Value: 1, Usage: "ai assistant min timeout"},
+	{Name: "game.ai-assistant-max-timeout", Type: config.Int, Shorthand: "", Value: 6, Usage: "ai assistant max timeout"},
+	{Name: "game.min-players", Type: config.Int, Shorthand: "", Value: 2, Usage: "minimum players to start the game"},
+	{Name: "game.max-players", Type: config.Int, Shorthand: "", Value: 4, Usage: "maximum players a game can play with"},
+	{Name: "game.frame-queue-size", Type: config.Int, Shorthand: "", Value: 32, Usage: "input frame queue size"},
 	{Name: "profile.on", Type: config.Bool, Shorthand: "", Value: false, Usage: "profiling flag"},
 	{Name: "profile.addr", Type: config.String, Shorthand: "", Value: "", Usage: "profiling address"},
 	{Name: "ws.port", Type: config.Int, Shorthand: "", Value: 0, Usage: "http server port"},
@@ -115,8 +125,8 @@ func startService() {
 	}
 	log.Sugar().Warn(viper.AllSettings())
 
-	// init server config
-	server.InitConfig(&server.Config{
+	// apply server config
+	server.SetConfig(&server.Config{
 		HTTPPort:               viper.GetInt("ws.port"),
 		SocketReadDeadLine:     time.Duration(viper.GetInt("ws.read-timeout")) * time.Second,
 		SocketReadBufferSize:   viper.GetInt("ws.read-buffer-size"),
@@ -130,6 +140,20 @@ func startService() {
 		WSWriteDeadLine:        time.Duration(viper.GetInt("ws.write-timeout")) * time.Second,
 		WSPongTimeout:          time.Duration(viper.GetInt("ws.pong-timeout")) * time.Second,
 		WSPingPeriod:           time.Duration(viper.GetInt("ws.ping-period")) * time.Second,
+	})
+
+	// apply game config
+	game.SetTableConfig(&game.TableConfig{
+		TurnTimeout:           viper.GetInt("game.turn-timeout"),
+		GameOverTimeout:       viper.GetInt("game.gameover-timeout"),
+		IdleTimeout:           viper.GetInt("game.idle-timeout"),
+		WaitTimeout:           viper.GetInt("game.Wait-timeout"),
+		PrepareTimeout:        viper.GetInt("game.prepare-timeout"),
+		AIAssistantMinTimeout: viper.GetInt("game.ai-assistant-min-timeout"),
+		AIAssistantMaxTimeout: viper.GetInt("game.ai-assistant-max-timeout"),
+		MinPlayers:            viper.GetInt("game.min-players"),
+		MaxPlayers:            viper.GetInt("game.max-players"),
+		FrameQueueSize:        viper.GetInt("game.frame-queue-size"),
 	})
 
 	// register handlers

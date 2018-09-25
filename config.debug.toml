@@ -6,6 +6,41 @@
 debug = true
 
 # ------------------------------------------------------------------------------
+# game configuration
+# ------------------------------------------------------------------------------
+[game]
+
+# timeout of a turn
+turn-timeout = 10
+
+# timeout of game over
+gameover-timeout = 5
+
+# timeout before adding bots
+idle-timeout = 30
+
+# timeout before starting a game
+Wait-timeout = 3
+
+# timeout before playing
+prepare-timeout = 3
+
+# ai assistant min timeout
+ai-assistant-min-timeout = 1
+
+# ai assistant max timeout
+ai-assistant-max-timeout = 6
+
+# minimum players to start the game
+min-players = 2
+
+# maximum players a game can play with
+max-players = 4
+
+# input frame queue size
+frame-queue-size = 32
+
+# ------------------------------------------------------------------------------
 # profile configuration
 # ------------------------------------------------------------------------------
 [profile]
