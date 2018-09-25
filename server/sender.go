@@ -57,7 +57,7 @@ func NewSender(ctrl chan struct{}, queueSize, sendCacheSize int, writer ConnWrit
 
 // EnqueueOutgoing push data to the sender's pending channel
 func (buf *Sender) EnqueueOutgoing(pkg []byte) error {
-	if pkg == nil {
+	if len(pkg) == 0 {
 		return ErrorSendEmptyPacket
 	}
 
