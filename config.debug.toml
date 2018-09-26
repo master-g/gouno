@@ -45,7 +45,7 @@ frame-queue-size = 32
 # ------------------------------------------------------------------------------
 [profile]
 
-on = true
+on = false
 
 addr = "localhost:9000"
 
@@ -56,6 +56,9 @@ addr = "localhost:9000"
 
 # which port should listen for http connection
 port = 9009
+
+# auth timeout, in seconds
+auth-timeout = 3
 
 # read timeout duration, in seconds
 read-timeout = 180
