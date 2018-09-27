@@ -419,7 +419,6 @@ func (t *Table) start(wg *sync.WaitGroup) {
 			log.Debug("table go in frame")
 			route(inFrame.C, t, *inFrame.F)
 		case <-ticker.C:
-			log.Debug("table tick")
 			// state machine here
 			t.tick()
 		case <-signal.InterruptChan:
