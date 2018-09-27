@@ -28,11 +28,11 @@ import (
 var enterGameHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ENTER_GAME_REQ,
 	RespCmd: pb.GameCmd_ENTER_GAME_RSP,
-	Handler: func(c *Client, t *Table, frame pb.Frame) (resp *pb.Frame, err error) {
+	Handler: func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error) {
 		// valid command, clear offline flag
 		c.ClearFlagOffline()
 		// prepare response
-		resp = &pb.Frame{
+		resp = pb.Frame{
 			Type: pb.FrameType_Message,
 			Cmd:  int32(pb.GameCmd_ENTER_GAME_RSP),
 		}

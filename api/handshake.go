@@ -25,7 +25,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/crypto"
-	"github.com/master-g/gouno/game"
 	"github.com/master-g/gouno/lntime"
 	"github.com/master-g/gouno/proto/pb"
 	"github.com/master-g/gouno/registry"
@@ -89,14 +88,14 @@ var handshakeHandler = &router.Handler{
 		status = int32(pb.StatusCode_STATUS_OK)
 
 		// register client to game server
-		registerReq := &game.RegisterRequest{
-			UID:         header.Uid,
-			ClientEntry: make(chan *game.Client),
-		}
-		game.Register <- registerReq
-		s.Client = <-registerReq.ClientEntry
-
-		go s.FetchLoop()
+		// registerReq := &game.RegisterRequest{
+		// 	UID:         header.Uid,
+		// 	ClientEntry: make(chan *game.Client),
+		// }
+		// game.Register <- registerReq
+		// s.Client = <-registerReq.ClientEntry
+		//
+		// go s.FetchLoop()
 
 		return
 	},

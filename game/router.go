@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp *pb.Frame, err error)
+type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error)
 
 // FrameHandler process client frames
 type FrameHandler struct {
@@ -65,7 +65,7 @@ func route(c *Client, t *Table, frame pb.Frame) {
 		}
 
 		select {
-		case c.Out <- *resp:
+		case c.Out <- resp:
 		default:
 			// TODO: is this default necessary ?
 		}

@@ -62,6 +62,12 @@ func StartWS() {
 }
 
 func createWSConnection(w http.ResponseWriter, r *http.Request) {
+	select {
+	case <-signal.InterruptChan:
+		log.Info("server is about to shutdown, connection rejected")
+		return
+	default:
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Info("ws upgrade failed", zap.Error(err))
@@ -122,7 +128,7 @@ func handleWSConnection(conn *websocket.Conn) {
 			} else {
 				log.Info("ws connection closed", zap.Error(err))
 			}
-			break
+			sess.SetFlagKicked()
 		}
 		select {
 		case in <- message:

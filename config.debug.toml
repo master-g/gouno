@@ -58,10 +58,10 @@ addr = "localhost:9000"
 port = 9009
 
 # auth timeout, in seconds
-auth-timeout = 30
+auth-timeout = 5
 
 # read timeout duration, in seconds
-read-timeout = 180
+read-timeout = 10
 
 # read buffer size, in bytes
 read-buffer-size = 32768

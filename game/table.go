@@ -27,6 +27,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/proto/pb"
+	"github.com/master-g/gouno/signal"
 	"github.com/master-g/gouno/uno"
 	"go.uber.org/zap"
 )
@@ -414,6 +415,8 @@ func (t *Table) start(wg *sync.WaitGroup) {
 		case <-ticker.C:
 			// state machine here
 			t.tick()
+		case <-signal.InterruptChan:
+			return
 		}
 
 		// if game is over, remove offline clients
