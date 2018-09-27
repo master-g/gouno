@@ -112,29 +112,6 @@ func handleWSConnection(conn *websocket.Conn) {
 		}()
 	}
 
-	conn.SetReadDeadline(time.Now().Add(config.WSPongTimeout))
-	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(config.WSPongTimeout))
-		return nil
-	})
-
-	// ping loop
-	go func() {
-		pingTicker := time.NewTicker(config.WSPingPeriod)
-		defer pingTicker.Stop()
-		for {
-			select {
-			case <-pingTicker.C:
-				conn.SetWriteDeadline(time.Now().Add(config.WSWriteDeadLine))
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					return
-				}
-			case <-sess.Die:
-				return
-			}
-		}
-	}()
-
 	// read loop
 	for {
 		conn.SetReadDeadline(time.Now().Add(config.SocketReadDeadLine))

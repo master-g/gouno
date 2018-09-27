@@ -26,10 +26,6 @@ type Config struct {
 	WSAllowOrigin bool
 	// WSWriteDeadLine websocket write timeout
 	WSWriteDeadLine time.Duration
-	// WSPongTimeout websocket pong timeout
-	WSPongTimeout time.Duration
-	// WSPingPeriod websocket ping interval
-	WSPingPeriod time.Duration
 }
 
 var config *Config

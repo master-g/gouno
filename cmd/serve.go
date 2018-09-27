@@ -61,8 +61,6 @@ var paramList = []config.Flag{
 	{Name: "ws.graceful-timeout", Type: config.Int, Shorthand: "", Value: 1, Usage: "graceful timeout before closing a connection, in seconds"},
 	{Name: "ws.allow-origin", Type: config.Bool, Shorthand: "", Value: true, Usage: "allow origin"},
 	{Name: "ws.write-timeout", Type: config.Int, Shorthand: "", Value: 10, Usage: "time allowed to write a message to the peer, in seconds"},
-	{Name: "ws.pong-timeout", Type: config.Int, Shorthand: "", Value: 60, Usage: "time allowed to read the next pong message from the peer, in seconds"},
-	{Name: "ws.ping-period", Type: config.Int, Shorthand: "", Value: 54, Usage: "send pings to peer with this period. Must be less than pong-timeout, in seconds"},
 	{Name: "log.filename", Type: config.String, Shorthand: "", Value: "gouno.log", Usage: "Log output filename"},
 	{Name: "log.max-size", Type: config.Int, Shorthand: "", Value: 32, Usage: "Maximum size for a log file, in megabytes"},
 	{Name: "log.max-age", Type: config.Int, Shorthand: "", Value: 7, Usage: "Maximum number of days to retain rotated log files, in days"},
@@ -138,8 +136,6 @@ func startService() {
 		AuthTimeout:            time.Duration(viper.GetInt("ws.auth-timeout")) * time.Second,
 		WSAllowOrigin:          viper.GetBool("ws.allow-origin"),
 		WSWriteDeadLine:        time.Duration(viper.GetInt("ws.write-timeout")) * time.Second,
-		WSPongTimeout:          time.Duration(viper.GetInt("ws.pong-timeout")) * time.Second,
-		WSPingPeriod:           time.Duration(viper.GetInt("ws.ping-period")) * time.Second,
 	})
 
 	// apply game config

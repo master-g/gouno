@@ -87,12 +87,6 @@ allow-origin = true
 # time allowed to write a message to the peer, in seconds
 write-timeout = 10
 
-# time allowed to read the next pong message from the peer, in seconds
-pong-timeout = 60
-
-# send pings to peer with this period. Must be less than pong-timeout, in seconds
-ping-period = 54
-
 # ------------------------------------------------------------------------------
 # logging configuration
 # ------------------------------------------------------------------------------
