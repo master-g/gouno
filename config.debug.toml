@@ -61,7 +61,7 @@ port = 9009
 auth-timeout = 5
 
 # read timeout duration, in seconds
-read-timeout = 10
+read-timeout = 180
 
 # read buffer size, in bytes
 read-buffer-size = 32768

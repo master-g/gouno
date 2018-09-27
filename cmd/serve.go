@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/master-g/gouno/api"
 	"github.com/master-g/gouno/config"
 	"github.com/master-g/gouno/game"
@@ -97,7 +99,8 @@ func init() {
 
 func startService() {
 	if viper.GetBool("debug") {
-		lnlog.InitLogSystem(nil)
+		_, level := lnlog.InitLogSystem(nil)
+		level.SetLevel(zap.DebugLevel)
 	} else {
 		lnlog.InitLogSystem(&lnlog.Config{
 			Filename:   viper.GetString("log.filename"),

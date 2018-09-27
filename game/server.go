@@ -74,6 +74,7 @@ func Start() {
 // WaitGameServerShutdown waits for game server to shutdown
 func WaitGameServerShutdown() {
 	// wait for all tables to tear down
+	log.Debug("closing all tables")
 	wg.Wait()
 }
 
@@ -101,12 +102,19 @@ func registerClient(req *RegisterRequest) {
 		if table == nil {
 			// no available table, create new one
 			table = NewTable()
+			// these channels must be create here, if try to create them in `table.start()`
+			// before `go table.start()` the table.Register is nil
+			// and `table.Register <- req` will panic
+			table.Register = make(chan *RegisterRequest)
+			table.InFrames = make(chan *InFrame, tableConfig.FrameQueueSize)
 			log.Info("new table created", zap.String("table", table.String()))
 			wg.Add(1)
 			go table.start(&wg)
 		}
 		// create new client in table loop
+		log.Debug("sending client register quest to table")
 		table.Register <- req
+		log.Debug("client register request sent to table")
 	}
 }
 

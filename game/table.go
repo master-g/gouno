@@ -220,6 +220,7 @@ func (t *Table) unregisterClient(c *Client) {
 }
 
 func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
+	log.Debug("broadcasting")
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		log.Error("unable to marshal proto msg", zap.Error(err))
@@ -244,6 +245,7 @@ func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
 			}
 		}
 	}
+	log.Debug("broadcast")
 }
 
 // this is a bit different from broadcast, since one player cannot see other player's cards
@@ -355,7 +357,7 @@ func (t *Table) tick() {
 			if len(t.Clients) < tableConfig.MinPlayers {
 				// add bot, will register a bot client to the table
 				// and the table stage will be changed in updateStageForPlayerJoinOrLeave()
-				AddBot(t)
+				//AddBot(t)
 			}
 		}
 	case StageGameOver:
@@ -389,33 +391,39 @@ func (t *Table) tick() {
 
 // table logic loop
 func (t *Table) start(wg *sync.WaitGroup) {
-	t.Register = make(chan *RegisterRequest)
-	t.InFrames = make(chan *InFrame, tableConfig.FrameQueueSize)
-
-	defer func() {
-		close(t.Register)
-		wg.Done()
-	}()
-
 	// tick every second
 	ticker := time.NewTicker(time.Second)
+
+	defer func() {
+		log.Debug("table quit")
+		ticker.Stop()
+		close(t.Register)
+		close(t.InFrames)
+		wg.Done()
+	}()
 
 	for {
 		select {
 		case req := <-t.Register:
+			log.Debug("received client register request from game server")
 			t.registerClient(req)
+			log.Debug("client registered, broadcasting...")
 			// broadcast new player join
 			t.broadcast(pb.GameCmd_PLAYER_JOIN_NTY, &pb.S2CPlayerJoinNty{
 				Uid: req.UID,
 			})
 			// change stage if there are enough players to start a new game
 			t.updateStageForPlayerJoinOrLeave()
+			log.Debug("table status updated")
 		case inFrame := <-t.InFrames:
+			log.Debug("table go in frame")
 			route(inFrame.C, t, *inFrame.F)
 		case <-ticker.C:
+			log.Debug("table tick")
 			// state machine here
 			t.tick()
 		case <-signal.InterruptChan:
+			log.Debug("systerm signal received in table")
 			return
 		}
 

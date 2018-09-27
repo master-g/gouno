@@ -129,6 +129,7 @@ func handleWSConnection(conn *websocket.Conn) {
 				log.Info("ws connection closed", zap.Error(err))
 			}
 			sess.SetFlagKicked()
+			return
 		}
 		select {
 		case in <- message:

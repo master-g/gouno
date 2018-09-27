@@ -124,7 +124,6 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 			// server is manually shutting down
 			sendPacket(s, out, s.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), int32(pb.StatusCode_STATUS_UNAVAILABLE), "server shutting down"))
 			s.SetFlagKicked()
-			log.Info("session kick flag set")
 		}
 
 		// check if should close session

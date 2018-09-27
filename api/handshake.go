@@ -23,6 +23,10 @@ package api
 import (
 	"errors"
 
+	"go.uber.org/zap"
+
+	"github.com/master-g/gouno/game"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/crypto"
 	"github.com/master-g/gouno/lntime"
@@ -88,14 +92,16 @@ var handshakeHandler = &router.Handler{
 		status = int32(pb.StatusCode_STATUS_OK)
 
 		// register client to game server
-		// registerReq := &game.RegisterRequest{
-		// 	UID:         header.Uid,
-		// 	ClientEntry: make(chan *game.Client),
-		// }
-		// game.Register <- registerReq
-		// s.Client = <-registerReq.ClientEntry
-		//
-		// go s.FetchLoop()
+		registerReq := &game.RegisterRequest{
+			UID:         header.Uid,
+			ClientEntry: make(chan *game.Client),
+		}
+		game.Register <- registerReq
+		s.Client = <-registerReq.ClientEntry
+
+		log.Debug("start fetch loop for session", zap.String("sess", s.String()))
+
+		go s.FetchLoop()
 
 		return
 	},
