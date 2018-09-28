@@ -22,7 +22,7 @@ gometalinter	--vendor \
 # build
 echo "==> Building..."
 
-PACKAGE=github.com/master-g/gouno/internal
+PACKAGE=github.com/master-g/gouno/cmd/gouno
 COMMIT_HASH=$(git rev-parse --short HEAD)
 BUILD_DATE=$(date +%Y-%m-%dT%TZ%z)
 

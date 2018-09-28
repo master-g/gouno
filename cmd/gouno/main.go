@@ -21,7 +21,7 @@
 package main
 
 import (
-	"github.com/master-g/gouno/internal/cmd"
+	"github.com/master-g/gouno/cmd/gouno/cmd"
 )
 
 func main() {

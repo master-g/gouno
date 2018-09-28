@@ -133,6 +133,8 @@ func NewTable() *Table {
 		Stage:     StageIdle,
 		Clockwise: true,
 		Deck:      uno.NewDeck(),
+		Timeout:   tableConfig.IdleTimeout,
+		TimeLeft:  tableConfig.IdleTimeout,
 		Discard:   make([]uint8, 0, uno.CardSetSize),
 	}
 	tableMap.Store(table.TID, table)
@@ -357,7 +359,8 @@ func (t *Table) tick() {
 			if len(t.Clients) < tableConfig.MinPlayers {
 				// add bot, will register a bot client to the table
 				// and the table stage will be changed in updateStageForPlayerJoinOrLeave()
-				//AddBot(t)
+				log.Debug("add bot")
+				AddBot(t)
 			}
 		}
 	case StageGameOver:

@@ -21,7 +21,7 @@
 package cmd
 
 import (
-	"github.com/master-g/gouno/internal/buildinfo"
+	"github.com/master-g/gouno/cmd/gouno/buildinfo"
 	"github.com/spf13/cobra"
 	jww "github.com/spf13/jwalterweatherman"
 )
