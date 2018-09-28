@@ -360,7 +360,7 @@ func (t *Table) tick() {
 				// add bot, will register a bot client to the table
 				// and the table stage will be changed in updateStageForPlayerJoinOrLeave()
 				log.Debug("add bot")
-				AddBot(t)
+				go AddBot(t)
 			}
 		}
 	case StageGameOver:

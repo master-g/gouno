@@ -22,7 +22,6 @@ package game
 
 import (
 	"math/rand"
-	"runtime"
 
 	"github.com/master-g/gouno/pkg/signal"
 	"go.uber.org/zap"
@@ -47,8 +46,6 @@ func AddBot(t *Table) {
 			case <-signal.InterruptChan:
 				log.Debug("bot receive signal.Interrupt")
 				return
-			default:
-				runtime.Gosched()
 			}
 		}
 	}()
