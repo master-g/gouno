@@ -23,6 +23,7 @@ package game
 import (
 	"math/rand"
 
+	"github.com/master-g/gouno/signal"
 	"go.uber.org/zap"
 )
 
@@ -36,11 +37,14 @@ func AddBot(t *Table) {
 	t.Register <- &req
 	bot := <-retChan
 
+	// simulate client
 	go func() {
 		for {
 			select {
 			case frame := <-bot.Out:
 				log.Info("frame", zap.String("frame", frame.String()))
+			case <-signal.InterruptChan:
+				return
 			}
 		}
 	}()
