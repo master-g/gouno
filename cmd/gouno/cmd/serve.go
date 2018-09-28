@@ -157,6 +157,9 @@ func startService() {
 	// register handlers
 	router.Register(api.Handlers)
 
+	// create fake rpc interface between gaent server and game server
+	game.CreateFakeRPCInterface()
+
 	// start ws server
 	go server.StartWS()
 
@@ -174,6 +177,9 @@ func startService() {
 
 	// wait for server to shutdown
 	server.WaitSocketShutdown()
+
+	// destroy fake rpc interface
+	game.DestroyFakeRPCInterface()
 
 	log.Info("bye~")
 }

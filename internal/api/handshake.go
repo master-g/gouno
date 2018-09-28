@@ -23,6 +23,8 @@ package api
 import (
 	"errors"
 
+	"github.com/master-g/gouno/pkg/lntime"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/game"
@@ -30,7 +32,6 @@ import (
 	"github.com/master-g/gouno/internal/router"
 	"github.com/master-g/gouno/internal/sessions"
 	"github.com/master-g/gouno/pkg/crypto"
-	"github.com/master-g/gouno/pkg/lntime"
 	"go.uber.org/zap"
 )
 
@@ -52,11 +53,13 @@ var handshakeHandler = &router.Handler{
 			s.SetFlagKicked()
 			return
 		}
+
+		newToken := crypto.GenToken(req.Udid)
 		// kick previous session
 		if prev, ok := registry.Registry.Load(header.Uid); ok {
 			if prevSession, ok := prev.(*sessions.Session); ok {
-				newToken := crypto.GenToken(req.Udid)
-				if newToken != s.Token {
+				if newToken != prevSession.Token {
+					log.Debug("token not match", zap.String("prev", prevSession.Token), zap.String("new", newToken))
 					status = int32(pb.StatusCode_STATUS_INVALID)
 					err = errors.New("invalid token")
 					return
@@ -64,10 +67,6 @@ var handshakeHandler = &router.Handler{
 				// kick prev session
 				prevSession.Push <- prevSession.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), int32(pb.KickReason_KICK_LOGIN_ELSEWHERE), "")
 				prevSession.SetFlagKicked()
-				// update session
-				s.Token = newToken
-				s.LastLogin = lntime.Timestamp()
-				registry.Registry.Store(s.UID, s)
 			} else {
 				status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
 				err = errors.New("unable to convert session from registry")
@@ -75,7 +74,11 @@ var handshakeHandler = &router.Handler{
 			}
 		}
 
-		registry.Registry.Store(header.Uid, s)
+		// update session
+		s.UID = header.Uid
+		s.Token = newToken
+		s.LastLogin = lntime.Timestamp()
+		registry.Registry.Store(s.UID, s)
 		s.SetFlagAuth()
 
 		body := &pb.S2CHandshakeRsp{

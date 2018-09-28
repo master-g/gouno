@@ -398,11 +398,11 @@ func (t *Table) start(wg *sync.WaitGroup) {
 	ticker := time.NewTicker(time.Second)
 
 	defer func() {
-		log.Debug("table quit")
 		ticker.Stop()
 		close(t.Register)
 		close(t.InFrames)
 		wg.Done()
+		log.Debug("table quit")
 	}()
 
 	for {
@@ -425,7 +425,7 @@ func (t *Table) start(wg *sync.WaitGroup) {
 			// state machine here
 			t.tick()
 		case <-signal.InterruptChan:
-			log.Debug("systerm signal received in table")
+			log.Debug("system terminal signal received in table")
 			return
 		}
 

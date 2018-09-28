@@ -132,7 +132,12 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 			if s.UID != 0 {
 				// REMOVE SESSION HERE ONLY
 				registry.Registry.Delete(s.UID)
-				game.Unregister <- s.UID
+				select {
+				case game.Unregister <- s.UID:
+				default:
+					// there might be no read from game.Unregister when game server is shutting down
+					// a default here to prevent block eternally
+				}
 			}
 			return
 		}

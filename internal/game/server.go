@@ -45,16 +45,20 @@ type RegisterRequest struct {
 	ClientEntry chan *Client
 }
 
-// Start game server
-func Start() {
+// CreateFakeRPCInterface creates two channel as fake rpc interface
+func CreateFakeRPCInterface() {
 	Register = make(chan *RegisterRequest)
 	Unregister = make(chan uint64)
+}
 
-	defer func() {
-		close(Register)
-		close(Unregister)
-	}()
+// DestroyFakeRPCInterface deletes the two channels
+func DestroyFakeRPCInterface() {
+	close(Register)
+	close(Unregister)
+}
 
+// Start game server
+func Start() {
 	// register all game CMD handlers
 	registerAllHandlers()
 
@@ -74,8 +78,9 @@ func Start() {
 // WaitGameServerShutdown waits for game server to shutdown
 func WaitGameServerShutdown() {
 	// wait for all tables to tear down
-	log.Debug("closing all tables")
+	log.Debug("waiting for all tables to close")
 	wg.Wait()
+	log.Debug("all tables closed")
 }
 
 func registerClient(req *RegisterRequest) {

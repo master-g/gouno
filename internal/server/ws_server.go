@@ -26,7 +26,9 @@ func init() {
 
 // WaitSocketShutdown wait for all client connection to close
 func WaitSocketShutdown() {
+	log.Info("wait for all agents to close")
 	wg.Wait()
+	log.Info("all agents closed")
 }
 
 // StartWS start accepting websocket connections
