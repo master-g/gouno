@@ -114,8 +114,8 @@ func handleWSConnection(conn *websocket.Conn) {
 	// close connection immediately
 	if config.SocketGracefulTimeout != 0 {
 		go func() {
-			// FIXME: maybe didn't need to fixed...
-			// agent close session.Dit channel, then connection is closed here
+			// NOTICE:
+			// agent close session.Die channel, then connection is closed here
 			// which cause a read error INSTANTLY in the read loop below
 			<-sess.Die
 			time.Sleep(config.SocketGracefulTimeout)

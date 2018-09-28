@@ -91,7 +91,8 @@ type Table struct {
 	// InFrames from clients
 	InFrames chan *InFrame
 
-	stateMap map[uint64]*PlayerState
+	stateMap  map[uint64]*PlayerState
+	clientMap map[uint64]*Client
 
 	gameOverTimeout int
 }
@@ -140,6 +141,7 @@ func NewTable() *Table {
 		TimeLeft:  tableConfig.IdleTimeout,
 		Discard:   make([]uint8, 0, uno.CardSetSize),
 		stateMap:  make(map[uint64]*PlayerState),
+		clientMap: make(map[uint64]*Client),
 	}
 	tableMap.Store(table.TID, table)
 	return table
@@ -183,6 +185,7 @@ func (t *Table) registerClient(req *RegisterRequest) {
 	state := NewPlayerState(req.UID)
 	t.States = append(t.States, state)
 	t.stateMap[req.UID] = state
+	t.clientMap[req.UID] = client
 
 	// start read pump
 	go func() {
@@ -222,6 +225,7 @@ func (t *Table) unregisterClient(c *Client) {
 			t.Clients = append(t.Clients[:i], t.Clients[i+1:]...)
 			t.States = append(t.States[:i], t.States[i+1:]...)
 			delete(t.stateMap, v.UID)
+			delete(t.clientMap, v.UID)
 			break
 		}
 	}
@@ -400,6 +404,7 @@ func (t *Table) tick() {
 			if playerState.Timeout {
 				// TODO: AI kicks in
 				log.Info("AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
+				ai(t, t.clientMap[t.CurrentPlayer])
 			} else {
 				log.Info("player timeout, prepare AI assistants", zap.Uint64("uid", t.CurrentPlayer))
 				// player timeout, set random interval before AI kicks in

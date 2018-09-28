@@ -99,3 +99,21 @@ func handleEventNty(t *Table, bot *Client, body []byte) {
 	}
 	log.Info("bot got game event", zap.String("event", event.String()))
 }
+
+func ai(t *Table, bot *Client) {
+	action := &pb.C2SAction{
+		Event: int32(pb.Event_EVENT_PLAY),
+		Card:  []uint8{t.stateMap[bot.UID].Cards[0]},
+	}
+	body, err := proto.Marshal(action)
+	if err != nil {
+		log.Fatal("error while marshal proto", zap.Error(err))
+	}
+	event := &pb.Frame{
+		Type: pb.FrameType_Message,
+		Cmd:  int32(pb.GameCmd_ACTION_REQ),
+		Body: body,
+	}
+
+	bot.In <- *event
+}

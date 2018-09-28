@@ -32,7 +32,7 @@ type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err e
 // FrameHandler process client frames
 type FrameHandler struct {
 	ReqCmd  pb.GameCmd
-	RespCmd pb.GameCmd
+	RespCmd pb.GameCmd // TODO: not used
 	Handler handlerFunc
 }
 
