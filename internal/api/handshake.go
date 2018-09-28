@@ -23,17 +23,15 @@ package api
 import (
 	"errors"
 
-	"go.uber.org/zap"
-
-	"github.com/master-g/gouno/game"
-
 	"github.com/golang/protobuf/proto"
-	"github.com/master-g/gouno/crypto"
-	"github.com/master-g/gouno/lntime"
+	"github.com/master-g/gouno/internal/game"
+	"github.com/master-g/gouno/internal/registry"
+	"github.com/master-g/gouno/internal/router"
+	"github.com/master-g/gouno/internal/sessions"
+	"github.com/master-g/gouno/pkg/crypto"
+	"github.com/master-g/gouno/pkg/lntime"
 	"github.com/master-g/gouno/proto/pb"
-	"github.com/master-g/gouno/registry"
-	"github.com/master-g/gouno/router"
-	"github.com/master-g/gouno/sessions"
+	"go.uber.org/zap"
 )
 
 // handle client handshake request
