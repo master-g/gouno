@@ -20,5 +20,5 @@
 *.osx.toml
 
 # Executable
-cmd/gouno/gouno
+bin/
 
