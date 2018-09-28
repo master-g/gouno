@@ -17,7 +17,7 @@ turn-timeout = 10
 gameover-timeout = 5
 
 # timeout before adding bots
-idle-timeout = 30
+idle-timeout = 3
 
 # timeout before starting a game
 Wait-timeout = 3

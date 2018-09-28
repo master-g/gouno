@@ -21,6 +21,7 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -90,6 +91,8 @@ type Table struct {
 	// InFrames from clients
 	InFrames chan *InFrame
 
+	stateMap map[uint64]*PlayerState
+
 	gameOverTimeout int
 }
 
@@ -136,13 +139,14 @@ func NewTable() *Table {
 		Timeout:   tableConfig.IdleTimeout,
 		TimeLeft:  tableConfig.IdleTimeout,
 		Discard:   make([]uint8, 0, uno.CardSetSize),
+		stateMap:  make(map[uint64]*PlayerState),
 	}
 	tableMap.Store(table.TID, table)
 	return table
 }
 
 func (t *Table) String() string {
-	return ""
+	return fmt.Sprintf("tid:%v stage:%v", t.TID, t.Stage)
 }
 
 // DumpState dumps table status and returns in TableState
@@ -178,6 +182,7 @@ func (t *Table) registerClient(req *RegisterRequest) {
 	// add state
 	state := NewPlayerState(req.UID)
 	t.States = append(t.States, state)
+	t.stateMap[req.UID] = state
 
 	// start read pump
 	go func() {
@@ -216,6 +221,7 @@ func (t *Table) unregisterClient(c *Client) {
 			// remove client and player state
 			t.Clients = append(t.Clients[:i], t.Clients[i+1:]...)
 			t.States = append(t.States[:i], t.States[i+1:]...)
+			delete(t.stateMap, v.UID)
 			break
 		}
 	}
@@ -284,6 +290,8 @@ func (t *Table) changeStage(toStage int) {
 		log.Error("change to same stage")
 		return
 	}
+	log.Info("table stage change to", zap.Int("toStage", toStage))
+
 	switch toStage {
 	case StageIdle:
 		t.Timeout = tableConfig.IdleTimeout
@@ -299,6 +307,7 @@ func (t *Table) changeStage(toStage int) {
 		log.Error("no such stage", zap.Int("toStage", toStage))
 	}
 	t.TimeLeft = t.Timeout
+	t.Stage = toStage
 }
 
 // updateStageForPlayerJoinOrLeave update stage if there is a player join or leave the game
@@ -383,11 +392,20 @@ func (t *Table) tick() {
 		}
 	case StagePlaying:
 		if t.TimeLeft <= 0 {
-			// TODO: player timeout logic here
-			// 1. add timeout flag to client or playerStatus
-			// 2. check if timeout flag is set
-			// 3. if set, check AI assistant timeout
-			// 4. if not set, set the flag, and set timeout for AI assistant
+			playerState, ok := t.stateMap[t.CurrentPlayer]
+			if !ok {
+				log.Error("unable to find player state for", zap.Uint64("uid", t.CurrentPlayer))
+				return
+			}
+			if playerState.Timeout {
+				// TODO: AI kicks in
+				log.Info("AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
+			} else {
+				log.Info("player timeout, prepare AI assistants", zap.Uint64("uid", t.CurrentPlayer))
+				// player timeout, set random interval before AI kicks in
+				playerState.Timeout = true
+				t.TimeLeft = tableConfig.AIAssistantMinTimeout + rand.Intn(tableConfig.AIAssistantMaxTimeout-tableConfig.AIAssistantMinTimeout)
+			}
 		}
 	}
 }
@@ -417,12 +435,12 @@ func (t *Table) start(wg *sync.WaitGroup) {
 			})
 			// change stage if there are enough players to start a new game
 			t.updateStageForPlayerJoinOrLeave()
-			log.Debug("table status updated")
 		case inFrame := <-t.InFrames:
-			log.Debug("table go in frame")
+			log.Debug("table got in frame")
 			route(inFrame.C, t, *inFrame.F)
 		case <-ticker.C:
 			// state machine here
+			log.Debug("table tick")
 			t.tick()
 		case <-signal.InterruptChan:
 			log.Debug("system terminal signal received in table")

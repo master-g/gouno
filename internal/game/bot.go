@@ -23,6 +23,8 @@ package game
 import (
 	"math/rand"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/pkg/signal"
 	"go.uber.org/zap"
 )
@@ -42,7 +44,7 @@ func AddBot(t *Table) {
 		for {
 			select {
 			case frame := <-bot.Out:
-				log.Info("frame", zap.String("frame", frame.String()))
+				dispatchFrame(t, bot, frame)
 			case <-signal.InterruptChan:
 				log.Debug("bot receive signal.Interrupt")
 				return
@@ -64,4 +66,36 @@ func genBotUID(t *Table) (uid uint64) {
 			return
 		}
 	}
+}
+
+func dispatchFrame(t *Table, bot *Client, frame pb.Frame) {
+	cmd := pb.GameCmd(frame.Cmd)
+	log.Debug("bot try to handle frame", zap.String("cmd", cmd.String()))
+	switch cmd {
+	case pb.GameCmd_GAME_START_NTY:
+		handleGameStartNty(t, bot, frame.Body)
+	case pb.GameCmd_EVENT_NTY:
+		handleEventNty(t, bot, frame.Body)
+	default:
+		log.Info("bot ignore frame for no handler for it")
+	}
+}
+
+func handleGameStartNty(t *Table, bot *Client, body []byte) {
+	log.Debug("bot ignore GameStartNty")
+	// tableState := pb.TableState{}
+	// err := proto.Unmarshal(body, &tableState)
+	// if err != nil {
+	// 	log.Error("unable to unmarshal frame body", zap.Error(err))
+	// 	return
+	// }
+}
+
+func handleEventNty(t *Table, bot *Client, body []byte) {
+	event := pb.S2CEventNty{}
+	err := proto.Unmarshal(body, &event)
+	if err != nil {
+		log.Fatal("game logic can't event unmarshal its own proto message", zap.Error(err))
+	}
+	log.Info("bot got game event", zap.String("event", event.String()))
 }

@@ -34,9 +34,10 @@ const (
 
 // PlayerState holds player status, for it is more related to table not client
 type PlayerState struct {
-	UID   uint64  // uid
-	Flag  int32   // flags
-	Cards []uint8 // cards
+	UID     uint64  // uid
+	Flag    int32   // flags
+	Cards   []uint8 // cards
+	Timeout bool    // timeout
 }
 
 // IsFlagSet returns true if flag is set
