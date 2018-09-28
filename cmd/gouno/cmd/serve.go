@@ -157,7 +157,7 @@ func startService() {
 	// register handlers
 	router.Register(api.Handlers)
 
-	// create fake rpc interface between gaent server and game server
+	// create fake rpc interface between agent server and game server
 	game.CreateFakeRPCInterface()
 
 	// start ws server
