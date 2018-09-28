@@ -21,9 +21,9 @@
 package api
 
 import (
+	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/router"
 	"github.com/master-g/gouno/internal/sessions"
-	"github.com/master-g/gouno/proto/pb"
 )
 
 // offlineHandler common.Cmd_OFFLINE_REQ

@@ -23,8 +23,8 @@ package router
 import (
 	"fmt"
 
+	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/sessions"
-	"github.com/master-g/gouno/proto/pb"
 )
 
 // HandlerFunc defines request handler function type

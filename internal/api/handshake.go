@@ -24,13 +24,13 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/game"
 	"github.com/master-g/gouno/internal/registry"
 	"github.com/master-g/gouno/internal/router"
 	"github.com/master-g/gouno/internal/sessions"
 	"github.com/master-g/gouno/pkg/crypto"
 	"github.com/master-g/gouno/pkg/lntime"
-	"github.com/master-g/gouno/proto/pb"
 	"go.uber.org/zap"
 )
 

@@ -1,7 +1,7 @@
 syntax = "proto3";
 package proto.internal;
 import "common.proto";
-option go_package = "github.com/master-g/gouno/proto/pb";
+option go_package = "github.com/master-g/gouno/api/pb";
 
 enum FrameType {
     Message = 0;

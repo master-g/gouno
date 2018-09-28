@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/uno"
 	"github.com/master-g/gouno/pkg/signal"
-	"github.com/master-g/gouno/proto/pb"
 	"go.uber.org/zap"
 )
 

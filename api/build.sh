@@ -4,7 +4,7 @@
 find . -maxdepth 1 -iname "*.proto" | xargs clang-format -style=file -i
 
 # temp dir
-PKG=github.com/master-g/gouno/proto/pb
+PKG=github.com/master-g/gouno/api/pb
 mkdir -p pb
 mkdir -p tmp
 cp *.proto tmp

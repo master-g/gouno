@@ -22,7 +22,7 @@ package game
 
 import (
 	"github.com/golang/protobuf/proto"
-	"github.com/master-g/gouno/proto/pb"
+	"github.com/master-g/gouno/api/pb"
 )
 
 // Player status

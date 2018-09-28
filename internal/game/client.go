@@ -23,7 +23,7 @@ package game
 import (
 	"fmt"
 
-	"github.com/master-g/gouno/proto/pb"
+	"github.com/master-g/gouno/api/pb"
 )
 
 // Flag client status
