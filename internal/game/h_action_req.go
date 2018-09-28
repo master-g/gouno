@@ -37,7 +37,22 @@ var actionReqHandler = &FrameHandler{
 			resp.Message = "game not started"
 			return
 		}
+		if t.CurrentPlayer != c.UID {
+			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
+			resp.Message = "not your turn"
+			return
+		}
 		// TODO
+		// EVENT_RESERVED          = 0; // noop, this event is send by server
+		// EVENT_TURN              = 1; // noop, this event is send by server
+		// EVENT_PLAY              = 2; // player play card
+		// EVENT_UNO_PLAY          = 3; // player play card and say uno
+		// EVENT_DRAW              = 4; // player draw cards from deck
+		// EVENT_SKIP              = 5; // noop, this event is send by server
+		// EVENT_CHALLENGE         = 6; // player challenge last player's wild+4 card
+		// EVENT_CHALLENGE_PENALTY = 7; // noop, this event is send by server
+		// EVENT_TIMEOUT           = 8; // noop, this event is send by server
+		// EVENT_DECK_SHUFFLE      = 9; // noop, this event is send by server
 
 		return
 	},
