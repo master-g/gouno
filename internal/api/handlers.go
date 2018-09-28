@@ -20,7 +20,7 @@
 
 package api
 
-import "github.com/master-g/gouno/router"
+import "github.com/master-g/gouno/internal/router"
 
 // Handlers holds all the handlers
 var Handlers []*router.Handler
