@@ -102,8 +102,8 @@ func handleEventNty(t *Table, bot *Client, body []byte) {
 
 func ai(t *Table, bot *Client) {
 	action := &pb.C2SAction{
-		Event: int32(pb.Event_EVENT_PLAY),
-		Card:  []uint8{t.stateMap[bot.UID].Cards[0]},
+		Action: int32(pb.Action_ACTION_PLAY),
+		Card:   []uint8{t.stateMap[bot.UID].Cards[0]},
 	}
 	body, err := proto.Marshal(action)
 	if err != nil {

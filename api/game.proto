@@ -31,6 +31,14 @@ enum Event {
     EVENT_DECK_SHUFFLE      = 9; // deck ran out, re-shuffle
 }
 
+enum Action {
+    ACTION_RESERVED  = 0; // reserved
+    ACTION_PLAY      = 1; // player try to play a card
+    ACTION_UNO_PLAY  = 2; // player try to play a card with uno said
+    ACTION_DRAW      = 3; // player try to draw a card from deck
+    ACTION_CHALLENGE = 4; // player challenge last player's wild draw 4
+}
+
 enum CardColor {
     COLOR_RED    = 0x00; // red
     COLOR_YELLOW = 0x10; // yellow
@@ -64,11 +72,11 @@ message TableState {
     int32       timeout        = 3;  // timeout of the stage
     int32       time_left      = 4;  // time left in seconds
     bool        clockwise      = 5;  // current direction
-    fixed64     last_player    = 6;  // last player
-    fixed64     current_player = 7;  // current player
-    int32       cards_left     = 8;  // cards left in deck, can be calculated
-    bytes       discard_pile   = 9;  // discard pile for played cards
-    repeated UnoPlayer players = 10; // player list
+    fixed64     last_player    = 7;  // last player
+    fixed64     current_player = 8;  // current player
+    int32       cards_left     = 9;  // cards left in deck, can be calculated
+    bytes       discard_pile   = 10; // discard pile for played cards
+    repeated UnoPlayer players = 11; // player list
 }
 
 message S2CPlayerJoinNty {
@@ -80,16 +88,14 @@ message S2CPlayerLeftNty {
 }
 
 message C2SAction {
-    int32 event      = 1; // event as action
-    bytes card       = 2; // card played
-    int32 wild_color = 3; // player play wild and select next play color
+    int32 action = 1; // action, see Action enum
+    bytes card   = 2; // card played
 }
 
 message S2CEventNty {
-    fixed64 uid        = 1; // player uid
-    int32   event      = 2; // action
-    int32   wild_color = 3; // player play wild and select next play color
-    bytes   card       = 4; // cards involved
+    fixed64 uid   = 1; // player uid
+    int32   event = 2; // action
+    bytes   card  = 3; // cards involved
 }
 
 message S2CGameOverNty {

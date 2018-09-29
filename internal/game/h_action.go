@@ -20,7 +20,10 @@
 
 package game
 
-import "github.com/master-g/gouno/api/pb"
+import (
+	"github.com/golang/protobuf/proto"
+	"github.com/master-g/gouno/api/pb"
+)
 
 var actionReqHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ACTION_REQ,
@@ -42,7 +45,14 @@ var actionReqHandler = &FrameHandler{
 			resp.Message = "not your turn"
 			return
 		}
-		// TODO
+
+		req := pb.C2SAction{}
+		err = proto.Unmarshal(frame.Body, &req)
+		if err != nil {
+			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
+			resp.Message = err.Error()
+			return
+		}
 		// EVENT_RESERVED          = 0; // noop, this event is send by server
 		// EVENT_TURN              = 1; // noop, this event is send by server
 		// EVENT_PLAY              = 2; // player play card
@@ -53,6 +63,28 @@ var actionReqHandler = &FrameHandler{
 		// EVENT_CHALLENGE_PENALTY = 7; // noop, this event is send by server
 		// EVENT_TIMEOUT           = 8; // noop, this event is send by server
 		// EVENT_DECK_SHUFFLE      = 9; // noop, this event is send by server
+
+		// 1. only one card in discard pile
+		// if card is wild
+		// 		player can play any card except action card
+		// else
+		// 		player must play normal card that matches the first card
+
+		// 2. more than one card in discard pile
+		//
+
+		switch req.Action {
+		case int32(pb.Action_ACTION_PLAY):
+			// if card is draw
+			// 		if no enough cards in table.deck
+			// 			t.
+		case int32(pb.Action_ACTION_UNO_PLAY):
+		case int32(pb.Action_ACTION_DRAW):
+		case int32(pb.Action_ACTION_CHALLENGE):
+		default:
+			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
+			resp.Message = "invalid action"
+		}
 
 		return
 	},

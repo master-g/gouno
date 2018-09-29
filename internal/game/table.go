@@ -91,8 +91,10 @@ type Table struct {
 	// InFrames from clients
 	InFrames chan *InFrame
 
-	stateMap  map[uint64]*PlayerState
-	clientMap map[uint64]*Client
+	// StartPlayer UID of starting player
+	startPlayer uint64
+	stateMap    map[uint64]*PlayerState
+	clientMap   map[uint64]*Client
 
 	gameOverTimeout int
 }
@@ -347,21 +349,59 @@ func (t *Table) dealInitialCards() {
 	}
 }
 
-func (t *Table) newGame() {
-	// choose player
-	if t.CurrentPlayer == 0 {
-		// completely new game
-		t.CurrentPlayer = t.Clients[rand.Intn(len(t.Clients))].UID
+func (t *Table) nextStartPlayer() uint64 {
+	if t.startPlayer == 0 {
+		// new game
+		return t.Clients[rand.Intn(len(t.Clients))].UID
 	} else {
 		for i, c := range t.Clients {
-			if c.UID == t.CurrentPlayer {
-				t.CurrentPlayer = t.Clients[(i+1)%len(t.Clients)].UID
-				break
+			if c.UID == t.startPlayer {
+				return t.Clients[(i+1)%len(t.Clients)].UID
 			}
 		}
 	}
+	return 0
+}
+
+func (t *Table) nextPlayer() uint64 {
+	if t.CurrentPlayer == 0 && t.startPlayer == 0 {
+		log.Error("need to select start player first")
+		return 0
+	}
+
+	for i, c := range t.Clients {
+		if c.UID == t.CurrentPlayer {
+			if t.Clockwise {
+				i = (i + 1) % len(t.Clients)
+			} else {
+				i--
+				if i < 0 {
+					i = len(t.Clients) - 1
+				}
+			}
+			return t.Clients[i].UID
+		}
+	}
+
+	return 0
+}
+
+func (t *Table) newGame() {
+	// select next start player
+	t.startPlayer = t.nextStartPlayer()
+	t.CurrentPlayer = t.startPlayer
+	t.LastPlayer = 0
 	// deal cards to each player, and deal first card
 	t.dealInitialCards()
+	// if first card is skip or reverse
+	value := uno.CardValue(t.Discard[0])
+	if value == uno.ValueSkip {
+		// skip
+		t.CurrentPlayer = t.nextPlayer()
+	} else if value == uno.ValueReverse {
+		// reverse
+		t.Clockwise = !t.Clockwise
+	}
 }
 
 func (t *Table) tick() {

@@ -25,6 +25,7 @@ import (
 	"math/bits"
 	"math/rand"
 	"sort"
+	"strings"
 )
 
 // Uno card types
@@ -96,8 +97,8 @@ var (
 		0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, // yellow
 		0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, // blue
 		0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, // green
-		0x4D, 0x4D, 0x4D, 0x4D, // wild
-		0x4E, 0x4E, 0x4E, 0x4E, // wild draw 4
+		0x4E, 0x4E, 0x4E, 0x4E, // wild
+		0x4F, 0x4F, 0x4F, 0x4F, // wild draw 4
 	}
 
 	value2str = map[uint8]string{
@@ -148,9 +149,7 @@ var (
 
 // Deck holds a full set of uno cards
 type Deck struct {
-	index    int
-	shuffled bool
-	cards    []uint8
+	cards []uint8
 }
 
 // NewDeck creates and returns pointer to a new Deck object
@@ -164,22 +163,17 @@ func NewDeck() *Deck {
 
 // Reset deck to initial state
 func (d *Deck) Reset() {
-	d.index = 0
-	if d.shuffled {
-		copy(d.cards, cardPreset)
-		d.shuffled = false
-	}
+	copy(d.cards, cardPreset)
 }
 
 // Deal a single card from deck, if the deck is empty, a 0 will be returned
 func (d *Deck) Deal() (c uint8, err error) {
-	if d.index >= len(d.cards) {
+	if len(d.cards) <= 0 {
 		err = ErrorNoEnoughCards
 		return
 	}
-	c = d.cards[d.index]
-	d.index++
-	// shuffle the rest of the cards
+	c = d.cards[0]
+	d.cards = d.cards[1:]
 	return
 }
 
@@ -189,22 +183,20 @@ func (d *Deck) DealFirstCard() (c uint8) {
 	d.Reset()
 	// no wild draw 4 cards
 	index := rand.Intn(CardSetSize - 4)
-	// swap index with first card in the deck
-	d.cards[0], d.cards[index] = d.cards[index], d.cards[0]
-	c = d.cards[0]
-	d.index++
+	c = d.cards[index]
+	d.cards = append(d.cards[:index], d.cards[index+1:]...)
 	// shuffle the rest of cards
-	d.Shuffle(1)
+	d.Shuffle(0)
 	return
 }
 
 func (d *Deck) deals(num int) (c []uint8, err error) {
-	if d.index+num >= len(d.cards) {
+	if len(d.cards) < num {
 		err = ErrorNoEnoughCards
 		return
 	}
-	c = d.cards[d.index : d.index+num]
-	d.index += num
+	c = d.cards[0:num]
+	d.cards = d.cards[num:]
 	return
 }
 
@@ -229,10 +221,26 @@ func (d *Deck) Shuffle(since int) {
 		j := rand.Intn(i + 1)
 		d.cards[i], d.cards[j] = d.cards[j], d.cards[i]
 	}
-	d.shuffled = true
 }
 
 // CardsRemaining returns the number of available cards in deck
 func (d *Deck) CardsRemaining() int {
-	return len(d.cards) - d.index
+	return len(d.cards)
+}
+
+// Recycle cards back to deck
+func (d *Deck) Recycle(discard []uint8) {
+	d.cards = append(d.cards, discard...)
+}
+
+func (d *Deck) String() string {
+	if d == nil || len(d.cards) == 0 {
+		return ""
+	}
+	b := &strings.Builder{}
+	for _, c := range d.cards {
+		b.WriteString(CardToString(c))
+		b.WriteString(",")
+	}
+	return b.String()
 }
