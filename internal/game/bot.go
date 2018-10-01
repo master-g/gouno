@@ -101,7 +101,7 @@ func handleEventNty(t *Table, bot *Client, body []byte) {
 }
 
 func ai(t *Table, bot *Client) {
-	action := &pb.C2SAction{
+	action := &pb.C2SActionReq{
 		Action: int32(pb.Action_ACTION_PLAY),
 		Card:   []uint8{t.stateMap[bot.UID].Cards[0]},
 	}

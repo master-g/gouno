@@ -8,17 +8,17 @@ option go_package = "github.com/master-g/gouno/api/pb";
 enum Cmd {
     RESERVED = 0;
     // Common Commands, handle by agent
-    HEART_BEAT_REQ = 0x1001; // C->S heartbeat request
-    HEART_BEAT_RSP = 0x1002; // S->C heartbeat response
-    KICK_NOTIFY    = 0x1004; // S->C kick notification
-    HANDSHAKE_REQ  = 0x1011; // C->S handshake request
-    HANDSHAKE_RSP  = 0x1012; // S->C handshake response
-    LOGOUT_REQ     = 0x1023; // C->S logout request
-    LOGOUT_RSP     = 0x1024; // S->C logout response
-    OFFLINE_REQ    = 0x1087; // C->S offline request
-    PING_REQ       = 0x1091; // C->S ping request
-    PING_RSP       = 0x1092; // S->C ping response
-    CMD_COMMON_END = 0x2000; // Reserved
+    HEART_BEAT_REQ  = 0x1001; // C->S heartbeat request
+    HEART_BEAT_RESP = 0x1002; // S->C heartbeat response
+    KICK_NOTIFY     = 0x1004; // S->C kick notification
+    HANDSHAKE_REQ   = 0x1011; // C->S handshake request
+    HANDSHAKE_RESP  = 0x1012; // S->C handshake response
+    LOGOUT_REQ      = 0x1023; // C->S logout request
+    LOGOUT_RESP     = 0x1024; // S->C logout response
+    OFFLINE_REQ     = 0x1087; // C->S offline request
+    PING_REQ        = 0x1091; // C->S ping request
+    PING_RESP       = 0x1092; // S->C ping response
+    CMD_COMMON_END  = 0x2000; // Reserved
 }
 
 // Status Code similar to http status code
@@ -98,7 +98,7 @@ message C2SHandshakeReq {
 
 // Handshake response
 // S->C
-message S2CHandshakeRsp {
+message S2CHandshakeResp {
     string token = 1; // token
 }
 

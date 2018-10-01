@@ -25,11 +25,12 @@ import (
 	"github.com/master-g/gouno/api/pb"
 )
 
-// Player status
+// Player status, FIXME: use definition in pb instead
 const (
 	PlayerStatusUno       = 0x01
 	PlayerStatusSkip      = 0x02
-	PlayerStatusChallenge = 0x04
+	PlayerStatusDraw      = 0x04
+	PlayerStatusChallenge = 0x08
 )
 
 // PlayerState holds player status, for it is more related to table not client

@@ -29,7 +29,7 @@ import (
 // heartbeatHandler common.Cmd_HEART_BEAT_REQ
 var heartbeatHandler = &router.Handler{
 	ReqCmd:  pb.Cmd_HEART_BEAT_REQ,
-	RespCmd: pb.Cmd_HEART_BEAT_RSP,
+	RespCmd: pb.Cmd_HEART_BEAT_RESP,
 	Handler: func(s *sessions.Session, header *pb.C2SHeader) (resp []byte, status int32, err error) {
 		status = int32(pb.StatusCode_STATUS_OK)
 		return

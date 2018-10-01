@@ -291,6 +291,18 @@ func (t *Table) notifyGameStart() {
 	}
 }
 
+// animation timeout, and game is now really started
+func (t *Table) notifyGamePlaying() {
+	t.broadcast(pb.GameCmd_EVENT_NTY, &pb.S2CEventNty{
+		Events: []*pb.SingleEvent{
+			{
+				Uid:   t.CurrentPlayer,
+				Event: int32(pb.Event_EVENT_TURN),
+			},
+		},
+	})
+}
+
 func (t *Table) changeStage(toStage int) {
 	if t.Stage == toStage {
 		log.Error("change to same stage")
@@ -429,10 +441,7 @@ func (t *Table) tick() {
 	case StagePrepare:
 		if t.TimeLeft <= 0 {
 			t.changeStage(StagePlaying)
-			t.broadcast(pb.GameCmd_EVENT_NTY, &pb.S2CEventNty{
-				Uid:   t.CurrentPlayer,
-				Event: int32(pb.Event_EVENT_TURN),
-			})
+			t.notifyGamePlaying()
 		}
 	case StagePlaying:
 		if t.TimeLeft <= 0 {

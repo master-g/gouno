@@ -8,9 +8,9 @@ option go_package = "github.com/master-g/gouno/api/pb";
 enum GameCmd {
     GAME_RESERVED   = 0;      //
     ENTER_GAME_REQ  = 0x2001; // C->S client request to enter a new game or resume an old one
-    ENTER_GAME_RSP  = 0x2002; // S->C response to ENTER_GAME
+    ENTER_GAME_RESP = 0x2002; // S->C response to ENTER_GAME
     ACTION_REQ      = 0x2003; // C->S player take action
-    ACTION_RSP      = 0x2004; // S->C action response
+    ACTION_RESP     = 0x2004; // S->C action response
     EVENT_NTY       = 0x2006; // S->C event broadcast
     PLAYER_JOIN_NTY = 0x2008; // S->C player join the game notification
     PLAYER_LEFT_NTY = 0x200A; // S->C player left the game notification
@@ -50,7 +50,8 @@ enum PlayerStatus {
     STATUS_DEFAULT   = 0;    // default state
     STATUS_UNO       = 0x01; // uno flag
     STATUS_SKIP      = 0x02; // force skip this round
-    STATUS_CHALLENGE = 0x04; // player challenge last player's wild draw 4
+    STATUS_DRAW      = 0x04; // player has draw a card from deck
+    STATUS_CHALLENGE = 0x08; // player challenge last player's wild draw 4
 }
 
 message UnoPlayer {
@@ -87,15 +88,24 @@ message S2CPlayerLeftNty {
     fixed64 uid = 1; // user id
 }
 
-message C2SAction {
+message C2SActionReq {
     int32 action = 1; // action, see Action enum
     bytes card   = 2; // card played
 }
 
-message S2CEventNty {
+message S2CActionResp {
+    int32 result = 1; // action result
+    bytes card   = 2; // cards involved
+}
+
+message SingleEvent {
     fixed64 uid   = 1; // player uid
-    int32   event = 2; // action
+    int32   event = 2; // action/event
     bytes   card  = 3; // cards involved
+}
+
+message S2CEventNty {
+    repeated SingleEvent events = 1; // events
 }
 
 message S2CGameOverNty {

@@ -27,13 +27,13 @@ import (
 
 var actionReqHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ACTION_REQ,
-	RespCmd: pb.GameCmd_ACTION_RSP,
+	RespCmd: pb.GameCmd_ACTION_RESP,
 	Handler: func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error) {
 		c.ClearFlagOffline()
 
 		resp = pb.Frame{
 			Type: pb.FrameType_Message,
-			Cmd:  int32(pb.GameCmd_ACTION_RSP),
+			Cmd:  int32(pb.GameCmd_ACTION_RESP),
 		}
 		if t.Stage != StagePlaying {
 			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
@@ -46,7 +46,7 @@ var actionReqHandler = &FrameHandler{
 			return
 		}
 
-		req := pb.C2SAction{}
+		req := pb.C2SActionReq{}
 		err = proto.Unmarshal(frame.Body, &req)
 		if err != nil {
 			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
@@ -75,12 +75,13 @@ var actionReqHandler = &FrameHandler{
 
 		switch req.Action {
 		case int32(pb.Action_ACTION_PLAY):
-			// if card is draw
-			// 		if no enough cards in table.deck
-			// 			t.
+			handlePlay(c, t, req, false)
 		case int32(pb.Action_ACTION_UNO_PLAY):
+			handlePlay(c, t, req, true)
 		case int32(pb.Action_ACTION_DRAW):
+			handleDraw(c, t, req)
 		case int32(pb.Action_ACTION_CHALLENGE):
+			handleChallenge(c, t, req)
 		default:
 			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
 			resp.Message = "invalid action"
@@ -92,4 +93,18 @@ var actionReqHandler = &FrameHandler{
 
 func init() {
 	addHandler(actionReqHandler)
+}
+
+func handlePlay(c *Client, t *Table, action pb.C2SActionReq, uno bool) {
+	// if card is draw
+	// 		if no enough cards in table.deck
+	// 			t.
+}
+
+func handleDraw(c *Client, t *Table, action pb.C2SActionReq) {
+
+}
+
+func handleChallenge(c *Client, t *Table, action pb.C2SActionReq) {
+
 }

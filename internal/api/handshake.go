@@ -42,7 +42,7 @@ import (
 // 4. connect to game server with gRPC stream
 var handshakeHandler = &router.Handler{
 	ReqCmd:   pb.Cmd_HANDSHAKE_REQ,
-	RespCmd:  pb.Cmd_HANDSHAKE_RSP,
+	RespCmd:  pb.Cmd_HANDSHAKE_RESP,
 	AuthFree: true,
 	Handler: func(s *sessions.Session, header *pb.C2SHeader) (resp []byte, status int32, err error) {
 		// parse request body
@@ -81,7 +81,7 @@ var handshakeHandler = &router.Handler{
 		registry.Registry.Store(s.UID, s)
 		s.SetFlagAuth()
 
-		body := &pb.S2CHandshakeRsp{
+		body := &pb.S2CHandshakeResp{
 			Token: s.Token,
 		}
 
