@@ -63,6 +63,16 @@ func NewPlayerState(uid uint64) *PlayerState {
 	}
 }
 
+// HasCard return true if player have card
+func (p PlayerState) HasCard(card uint8) bool {
+	for _, v := range p.Cards {
+		if v == card {
+			return true
+		}
+	}
+	return false
+}
+
 // HideCardsForUID will hide other player's cards for player with given uid
 func HideCardsForUID(state *pb.TableState, uid uint64) *pb.TableState {
 	newState := proto.Clone(state).(*pb.TableState)

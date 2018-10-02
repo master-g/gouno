@@ -23,25 +23,21 @@ package game
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
+	"go.uber.org/zap"
 )
 
 var enterGameHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ENTER_GAME_REQ,
 	RespCmd: pb.GameCmd_ENTER_GAME_RESP,
-	Handler: func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error) {
-		// valid command, clear offline flag
-		c.ClearFlagOffline()
+	Handler: func(c *Client, t *Table, frame pb.Frame) (resp []byte, status int32, msg string, err error) {
 		// prepare response
-		resp = pb.Frame{
-			Type: pb.FrameType_Message,
-			Cmd:  int32(pb.GameCmd_ENTER_GAME_RESP),
-		}
-
 		state := HideCardsForUID(t.DumpState(), c.UID)
-		resp.Body, err = proto.Marshal(state)
+		resp, err = proto.Marshal(state)
 		if err != nil {
-			resp.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
-			resp.Message = "unable to marshal proto message"
+			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			msg = err.Error()
+			log.Error("error while marshaling proto", zap.Error(err))
+			return
 		}
 
 		return

@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error)
+type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp []byte, status int32, msg string, err error)
 
 // FrameHandler process client frames
 type FrameHandler struct {
@@ -59,9 +59,22 @@ func registerAllHandlers() {
 
 func route(c *Client, t *Table, frame pb.Frame) {
 	if h, ok := handlerMap[frame.Cmd]; ok {
-		resp, err := h.Handler(c, t, frame)
+		// valid command, clear offline flag
+		c.ClearFlagOffline()
+
+		// TODO: change Handler result from frame to bytes
+		body, status, msg, err := h.Handler(c, t, frame)
 		if err != nil {
 			log.Error("error while handling game cmd", zap.String("handler", h.String()), zap.String("req", frame.String()))
+			return
+		}
+
+		resp := pb.Frame{
+			Type:    pb.FrameType_Message,
+			Status:  status,
+			Cmd:     int32(h.RespCmd),
+			Message: msg,
+			Body:    body,
 		}
 
 		select {

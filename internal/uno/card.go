@@ -30,9 +30,6 @@ import (
 
 // Uno card types
 const (
-	TypeStandard uint8 = 0x00 // 0rccvvvvb
-	TypeWild     uint8 = 0x80 // 1rccvvvvb
-
 	CardSetSize int = 108
 )
 
@@ -129,8 +126,8 @@ var (
 
 // CardToString convert card to string
 func CardToString(c uint8) string {
-	if CardType(c) == TypeWild {
-		return "w" + value2str[CardValue(c)]
+	if CardValue(c) == ValueWild {
+		return "w" + color2str[CardColor(c)]
 	}
 	return color2str[CardColor(c)] + value2str[CardValue(c)]
 }

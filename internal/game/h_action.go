@@ -23,68 +23,62 @@ package game
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
+	"github.com/master-g/gouno/internal/uno"
 )
 
 var actionReqHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ACTION_REQ,
 	RespCmd: pb.GameCmd_ACTION_RESP,
-	Handler: func(c *Client, t *Table, frame pb.Frame) (resp pb.Frame, err error) {
-		c.ClearFlagOffline()
-
-		resp = pb.Frame{
-			Type: pb.FrameType_Message,
-			Cmd:  int32(pb.GameCmd_ACTION_RESP),
+	Handler: func(c *Client, t *Table, frame pb.Frame) (resp []byte, status int32, msg string, err error) {
+		status = int32(pb.StatusCode_STATUS_OK)
+		body := &pb.S2CActionResp{
+			Result: int32(pb.ActionResult_ACTION_RESULT_OK),
 		}
 		if t.Stage != StagePlaying {
-			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
-			resp.Message = "game not started"
+			body.Result = int32(pb.ActionResult_ACTION_RESULT_GAME_NOT_START)
+			msg = "game not started"
 			return
 		}
 		if t.CurrentPlayer != c.UID {
-			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
-			resp.Message = "not your turn"
+			body.Result = int32(pb.ActionResult_ACTION_RESULT_NOT_TURN)
+			msg = "not your turn"
+			return
+		}
+		state, ok := t.stateMap[c.UID]
+		if !ok {
+			body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			msg = "player state not exists"
 			return
 		}
 
 		req := pb.C2SActionReq{}
 		err = proto.Unmarshal(frame.Body, &req)
 		if err != nil {
-			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
-			resp.Message = err.Error()
+			status = int32(pb.StatusCode_STATUS_INVALID)
+			body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+			msg = err.Error()
 			return
 		}
-		// EVENT_RESERVED          = 0; // noop, this event is send by server
-		// EVENT_TURN              = 1; // noop, this event is send by server
-		// EVENT_PLAY              = 2; // player play card
-		// EVENT_UNO_PLAY          = 3; // player play card and say uno
-		// EVENT_DRAW              = 4; // player draw cards from deck
-		// EVENT_SKIP              = 5; // noop, this event is send by server
-		// EVENT_CHALLENGE         = 6; // player challenge last player's wild+4 card
-		// EVENT_CHALLENGE_PENALTY = 7; // noop, this event is send by server
-		// EVENT_TIMEOUT           = 8; // noop, this event is send by server
-		// EVENT_DECK_SHUFFLE      = 9; // noop, this event is send by server
-
-		// 1. only one card in discard pile
-		// if card is wild
-		// 		player can play any card except action card
-		// else
-		// 		player must play normal card that matches the first card
-
-		// 2. more than one card in discard pile
-		//
 
 		switch req.Action {
 		case int32(pb.Action_ACTION_PLAY):
-			handlePlay(c, t, req, false)
+			fallthrough
 		case int32(pb.Action_ACTION_UNO_PLAY):
-			handlePlay(c, t, req, true)
+			handlePlay(c, t, req, state, body)
 		case int32(pb.Action_ACTION_DRAW):
 			handleDraw(c, t, req)
 		case int32(pb.Action_ACTION_CHALLENGE):
 			handleChallenge(c, t, req)
 		default:
-			resp.Status = int32(pb.StatusCode_STATUS_INVALID)
-			resp.Message = "invalid action"
+			status = int32(pb.StatusCode_STATUS_INVALID)
+			msg = "invalid action"
+		}
+
+		resp, err = proto.Marshal(body)
+		if err != nil {
+			msg = err.Error()
+			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
 		}
 
 		return
@@ -95,10 +89,38 @@ func init() {
 	addHandler(actionReqHandler)
 }
 
-func handlePlay(c *Client, t *Table, action pb.C2SActionReq, uno bool) {
-	// if card is draw
-	// 		if no enough cards in table.deck
-	// 			t.
+func handlePlay(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp) {
+	// must play one card
+	if len(action.Card) != 1 {
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		return
+	}
+	// must play his/her own card
+	if !state.HasCard(action.Card[0]) {
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_CARD_NOT_EXIST)
+		return
+	}
+	// has player draw card from deck
+	if state.IsFlagSet(PlayerStatusDraw) {
+		if state.Cards[len(state.Cards)-1] != action.Card[0] {
+			// player must play or keep its last draw card after draw
+			body.Result = int32(pb.ActionResult_ACTION_RESULT_NOT_DRAW_CARD)
+			return
+		}
+	}
+
+	//
+
+	// the first card of the table is wild
+	if len(t.Discard) == 1 && uno.CardValue(t.Discard[0]) == uno.ValueWild {
+		body.Card = append(body.Card, action.Card[0])
+		state.Cards = append(state.Cards[:len(state.Cards)-1])
+		// broadcast
+	}
+
+	// check for uno
+
+	// check for game over
 }
 
 func handleDraw(c *Client, t *Table, action pb.C2SActionReq) {
