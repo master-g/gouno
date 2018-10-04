@@ -62,15 +62,15 @@ enum CardColor {
 enum PlayerStatus {
     STATUS_DEFAULT   = 0;    // default state
     STATUS_UNO       = 0x01; // uno flag
-    STATUS_SKIP      = 0x02; // force skip this round
-    STATUS_DRAW      = 0x04; // player has draw a card from deck
-    STATUS_CHALLENGE = 0x08; // player can challenge last player's wild draw 4
+    STATUS_DRAW      = 0x02; // player has draw a card from deck
+    STATUS_CHALLENGE = 0x04; // player can challenge last player's wild draw 4
 }
 
 message UnoPlayer {
     fixed64 uid    = 1; // user id
     int32   status = 3; // status flag
     bytes   cards  = 4; // uno cards
+    int32   score  = 5; // score
 }
 
 enum TableStatus {

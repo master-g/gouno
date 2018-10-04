@@ -23,14 +23,7 @@ package game
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
-)
-
-// Player status, FIXME: use definition in pb instead
-const (
-	PlayerStatusUno       = 0x01
-	PlayerStatusSkip      = 0x02
-	PlayerStatusDraw      = 0x04
-	PlayerStatusChallenge = 0x08
+	"github.com/master-g/gouno/internal/uno"
 )
 
 // PlayerState holds player status, for it is more related to table not client
@@ -39,6 +32,7 @@ type PlayerState struct {
 	Flag    int32   // flags
 	Cards   []uint8 // cards
 	Timeout bool    // timeout
+	Score   int32   // player score
 }
 
 // IsFlagSet returns true if flag is set
@@ -93,7 +87,22 @@ func (p PlayerState) Dump() *pb.UnoPlayer {
 		Uid:    p.UID,
 		Status: p.Flag,
 		Cards:  make([]uint8, len(p.Cards)),
+		Score:  p.Score,
 	}
 	copy(state.Cards, p.Cards)
 	return state
+}
+
+// Score convert cards to score after game over
+func (p PlayerState) CalculateScore() int32 {
+	var score int32
+	for _, c := range p.Cards {
+		score += uno.CardScore(c)
+	}
+	return score
+}
+
+func (p *PlayerState) ResetForNewGame() {
+	p.Flag = 0
+	p.Score = 0
 }

@@ -67,13 +67,15 @@ var actionReqHandler = &FrameHandler{
 		case int32(pb.Action_ACTION_PLAY):
 			fallthrough
 		case int32(pb.Action_ACTION_UNO_PLAY):
-			handlePlay(c, t, req, state, body, &result)
+			handlePlay(t, req, state, body, &result)
 		case int32(pb.Action_ACTION_DRAW):
-			handleDraw(c, t, req)
+			handleDraw(t, req, state, body, &result)
 		case int32(pb.Action_ACTION_KEEP):
+			handleKeep(t, req, state, body, &result)
 		case int32(pb.Action_ACTION_CHALLENGE):
-			handleChallenge(c, t, req)
+			handleChallenge(c, t, req, state, body, &result)
 		case int32(pb.Action_ACTION_ACCEPT):
+			handleAccept(c, t, req, state, body, &result)
 		default:
 			result.Status = int32(pb.StatusCode_STATUS_INVALID)
 			result.Msg = "invalid action"
@@ -93,7 +95,7 @@ func init() {
 	addHandler(actionReqHandler)
 }
 
-func handlePlay(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
 	result.Status = int32(pb.StatusCode_STATUS_OK)
 	// if CHALLENGE flag is set, play can only choose to accept or challenge
 	if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
@@ -153,7 +155,7 @@ func handlePlay(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState,
 		return
 	}
 
-	notify := &pb.S2CEventNty{}
+	result.Events = make([]*pb.SingleEvent, 0)
 
 	// card played
 	body.Card = append(body.Card, actionCard)
@@ -161,30 +163,49 @@ func handlePlay(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState,
 
 	// clear player flag
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
+	state.Timeout = false
 
 	// events
 	playEvent := &pb.SingleEvent{
-		Uid:   c.UID,
+		Uid:   state.UID,
 		Event: int32(pb.Event_EVENT_PLAY),
 		Card:  make([]byte, 1),
 	}
+	if action.Action == int32(pb.Action_ACTION_UNO_PLAY) {
+		playEvent.Event = int32(pb.Event_EVENT_UNO_PLAY)
+	}
 	playEvent.Card[0] = actionCard
-	notify.Events = append(notify.Events, playEvent)
+	result.Events = append(result.Events, playEvent)
 
+	// action card effects
 	var err error
+	var drawCount int
+	skip := false
 
 	switch actionValue {
 	case uno.ValueReverse:
 		t.Clockwise = !t.Clockwise
-		notify.Events = append(notify.Events, &pb.SingleEvent{
+		result.Events = append(result.Events, &pb.SingleEvent{
 			Event: int32(pb.Event_EVENT_REVERSE),
 		})
-	case uno.ValueDraw2, uno.ValueWildDraw4:
-		drawCount := uno.CardCount4
-		if actionValue == uno.ValueDraw2 {
-			drawCount = uno.CardCount2
-		}
-		nextPlayerUID := t.nextPlayer()
+	case uno.ValueDraw2:
+		drawCount = uno.CardCount2
+		skip = true
+	case uno.ValueSkip:
+		skip = true
+		// case uno.ValueWildDraw4: if wild+4 is the last card of the player, should next player draw 4 cards before game over ?
+	}
+
+	// next player's turn
+	nextPlayerUID := t.nextPlayer()
+
+	if actionValue == uno.ValueWildDraw4 {
+		// wild draw 4
+		nextState := t.stateMap[nextPlayerUID]
+		nextState.SetFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
+	}
+
+	if drawCount > 0 {
 		// draw cards
 		drawEvent := &pb.SingleEvent{
 			Uid:   nextPlayerUID,
@@ -193,33 +214,96 @@ func handlePlay(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState,
 		drawEvent.Card, err = t.Deck.Deals(drawCount)
 		if err != nil {
 			// re-shuffle if needed
-			notify.Events = append(notify.Events, t.recycleDiscardPile())
+			result.Events = append(result.Events, t.recycleDiscardPile())
 			drawEvent.Card, _ = t.Deck.Deals(drawCount)
 		}
 
-		notify.Events = append(notify.Events, drawEvent)
-		// skip
-		fallthrough
-	case uno.ValueSkip:
-		// skip
-		t.CurrentPlayer = t.nextPlayer()
-		notify.Events = append(notify.Events, &pb.SingleEvent{
-			Uid:   t.CurrentPlayer,
-			Event: int32(pb.Event_EVENT_SKIP),
-		})
+		result.Events = append(result.Events, drawEvent)
 	}
 
+	if skip {
+		// skip
+		result.Events = append(result.Events, &pb.SingleEvent{
+			Uid:   nextPlayerUID,
+			Event: int32(pb.Event_EVENT_SKIP),
+		})
+		// to get next player's uid, need to set CurrentPlayer first
+		t.CurrentPlayer = nextPlayerUID
+		nextPlayerUID = t.nextPlayer()
+	}
+
+	// set next player
+	t.CurrentPlayer = nextPlayerUID
+
 	// check for uno
+	if (len(state.Cards) == 1 && action.Action != int32(pb.Action_ACTION_UNO_PLAY)) || (len(state.Cards) > 1 && action.Action == int32(pb.Action_ACTION_UNO_PLAY)) {
+		// penalty
+		drawEvent := &pb.SingleEvent{
+			Uid:   state.UID,
+			Event: int32(pb.Event_EVENT_DRAW),
+		}
+		drawEvent.Card, err = t.Deck.Deals(uno.CardCount2)
+		if err != nil {
+			// re-shuffle if needed
+			result.Events = append(result.Events, t.recycleDiscardPile())
+			drawEvent.Card, _ = t.Deck.Deals(uno.CardCount2)
+		}
+	}
+
+	// there might be re-shuffle before, so put card in discard pile here
+	t.Discard = append(t.Discard, actionCard)
 
 	// check for game over
-
-	return
+	if len(state.Cards) == 0 {
+		result.GameOver = true
+	} else {
+		// reset timeout
+		t.TimeLeft = t.Timeout
+		result.Events = append(result.Events, &pb.SingleEvent{
+			Uid:   nextPlayerUID,
+			Event: int32(pb.Event_EVENT_TURN),
+		})
+	}
 }
 
-func handleDraw(c *Client, t *Table, action pb.C2SActionReq) {
+func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+	result.Events = make([]*pb.SingleEvent, 1)
+	state.SetFlag(int32(pb.PlayerStatus_STATUS_DRAW))
+	card, err := t.Deck.Deal()
+	if err != nil {
+		// re-shuffle if needed
+		result.Events = append(result.Events, t.recycleDiscardPile())
+		card, _ = t.Deck.Deal()
+	}
+	result.Events[0] = &pb.SingleEvent{
+		Event: int32(pb.Event_EVENT_DRAW),
+		Card:  make([]uint8, 1),
+	}
+	result.Events[0].Card[0] = card
+
+	body.Card = make([]uint8, 1)
+	body.Card[0] = card
+
+	// reset timeout
+	t.TimeLeft = t.Timeout
+}
+
+func handleKeep(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+	result.Events = make([]*pb.SingleEvent, 1)
+	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
+	result.Events[0] = &pb.SingleEvent{
+		Event: int32(pb.Event_EVENT_KEEP),
+	}
+
+	state.Timeout = false
+	t.CurrentPlayer = t.nextPlayer()
+	t.TimeLeft = t.Timeout
+}
+
+func handleChallenge(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
 
 }
 
-func handleChallenge(c *Client, t *Table, action pb.C2SActionReq) {
+func handleAccept(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
 
 }

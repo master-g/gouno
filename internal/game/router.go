@@ -23,8 +23,6 @@ package game
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
-
 	"github.com/master-g/gouno/api/pb"
 	"go.uber.org/zap"
 )
@@ -40,11 +38,12 @@ type FrameHandler struct {
 
 // HandleResult wraps up handler function results
 type HandleResult struct {
-	Body      []byte
-	Status    int32
-	Broadcast proto.Message
-	Msg       string
-	Err       error
+	Body     []byte
+	Status   int32
+	Events   []*pb.SingleEvent
+	GameOver bool
+	Msg      string
+	Err      error
 }
 
 func (h *FrameHandler) String() string {
@@ -94,6 +93,17 @@ func route(c *Client, t *Table, frame pb.Frame) {
 		case c.Out <- resp:
 		default:
 			// TODO: is this default necessary ?
+		}
+
+		if len(result.Events) > 0 {
+			t.notifyEvent(&pb.S2CEventNty{
+				Events: result.Events,
+			})
+		}
+
+		if result.GameOver {
+			t.changeStage(StageGameOver)
+			t.broadcast(pb.GameCmd_GAME_OVER_NTY, t.gameOver())
 		}
 
 	} else {

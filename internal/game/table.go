@@ -427,6 +427,7 @@ func (t *Table) nextPlayer() uint64 {
 	return 0
 }
 
+// new game, new round
 func (t *Table) newGame() {
 	// select next start player
 	t.startPlayer = t.nextStartPlayer()
@@ -455,6 +456,18 @@ func (t *Table) recycleDiscardPile() *pb.SingleEvent {
 		Event: int32(pb.Event_EVENT_DECK_SHUFFLE),
 		Card:  make([]uint8, t.Deck.CardsRemaining()),
 	}
+}
+
+func (t *Table) gameOver() *pb.S2CGameOverNty {
+	nty := &pb.S2CGameOverNty{
+		Ranks:  make([]uint64, len(t.States)),
+		Scores: make([]int32, len(t.States)),
+	}
+	for i, s := range t.States {
+		nty.Ranks[i] = s.UID
+		nty.Scores[i] = s.CalculateScore()
+	}
+	return nty
 }
 
 func (t *Table) tick() {

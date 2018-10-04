@@ -88,6 +88,21 @@ func CardValue(c uint8) uint8 {
 	return c & 0x0F
 }
 
+// CardScore returns the score of the card c
+func CardScore(c uint8) int32 {
+	value := CardValue(c)
+	if value < ValueSkip {
+		return int32(c - 1)
+	}
+	if value == ValueSkip || value == ValueReverse || value == ValueDraw2 {
+		return 20
+	} else if value == ValueWild {
+		return 40
+	} else {
+		return 50
+	}
+}
+
 var (
 	cardPreset = []uint8{
 		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, // red, 0~9, skip, reverse, draw 2
