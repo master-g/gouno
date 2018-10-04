@@ -78,6 +78,8 @@ type Table struct {
 	Deck *uno.Deck
 	// Discard holds uno cards that has been discard
 	Discard []uint8
+	// DeckRecycled indicates if the deck has been recycled
+	DeckRecycled bool
 	// Timeout for the stage, in seconds
 	Timeout int
 	// TimeLeft for seconds left
@@ -262,6 +264,45 @@ func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
 	log.Debug("broadcast")
 }
 
+func (t *Table) notifyEvent(event *pb.S2CEventNty) {
+	for _, c := range t.Clients {
+		eventCpy := proto.Clone(event).(*pb.S2CEventNty)
+		for i, singleEvent := range eventCpy.Events {
+			if singleEvent.Uid == 0 || len(singleEvent.Card) == 0 {
+				continue
+			}
+			if c.UID != singleEvent.Uid {
+				// hide card info from other player
+				event.Events[i] = &pb.SingleEvent{
+					Uid:   singleEvent.Uid,
+					Event: singleEvent.Event,
+					Card:  make([]uint8, len(singleEvent.Card)),
+				}
+			}
+		}
+
+		body, err := proto.Marshal(eventCpy)
+		if err != nil {
+			log.Error("failed to marshal proto", zap.Error(err))
+			return
+		}
+
+		frame := &pb.Frame{
+			Cmd:    int32(pb.GameCmd_EVENT_NTY),
+			Status: int32(pb.StatusCode_STATUS_OK),
+			Type:   pb.FrameType_Message,
+			Body:   body,
+		}
+
+		if !c.IsFlagOfflineSet() {
+			select {
+			case c.Out <- *frame:
+			default:
+			}
+		}
+	}
+}
+
 // this is a bit different from broadcast, since one player cannot see other player's cards
 func (t *Table) notifyGameStart() {
 	state := t.DumpState()
@@ -289,18 +330,6 @@ func (t *Table) notifyGameStart() {
 			}
 		}
 	}
-}
-
-// animation timeout, and game is now really started
-func (t *Table) notifyGamePlaying() {
-	t.broadcast(pb.GameCmd_EVENT_NTY, &pb.S2CEventNty{
-		Events: []*pb.SingleEvent{
-			{
-				Uid:   t.CurrentPlayer,
-				Event: int32(pb.Event_EVENT_TURN),
-			},
-		},
-	})
 }
 
 func (t *Table) changeStage(toStage int) {
@@ -354,7 +383,7 @@ func (t *Table) dealInitialCards() {
 
 	// deal 7 cards to each player
 	for _, playerState := range t.States {
-		playerState.Cards, err = t.Deck.Deal7()
+		playerState.Cards, err = t.Deck.Deals(uno.CardCount7)
 		if err != nil {
 			return
 		}
@@ -403,6 +432,7 @@ func (t *Table) newGame() {
 	t.startPlayer = t.nextStartPlayer()
 	t.CurrentPlayer = t.startPlayer
 	t.LastPlayer = 0
+	t.DeckRecycled = false
 	// deal cards to each player, and deal first card
 	t.dealInitialCards()
 	// if first card is skip or reverse
@@ -413,6 +443,17 @@ func (t *Table) newGame() {
 	} else if value == uno.ValueReverse {
 		// reverse
 		t.Clockwise = !t.Clockwise
+	}
+}
+
+func (t *Table) recycleDiscardPile() *pb.SingleEvent {
+	t.Deck.Recycle(t.Discard)
+	t.Deck.Shuffle(0)
+	t.DeckRecycled = true
+
+	return &pb.SingleEvent{
+		Event: int32(pb.Event_EVENT_DECK_SHUFFLE),
+		Card:  make([]uint8, t.Deck.CardsRemaining()),
 	}
 }
 
@@ -440,8 +481,17 @@ func (t *Table) tick() {
 		}
 	case StagePrepare:
 		if t.TimeLeft <= 0 {
+			// animation timeout, and game is now truly started
 			t.changeStage(StagePlaying)
-			t.notifyGamePlaying()
+			t.notifyEvent(
+				&pb.S2CEventNty{
+					Events: []*pb.SingleEvent{
+						{
+							Uid:   t.CurrentPlayer,
+							Event: int32(pb.Event_EVENT_TURN),
+						},
+					},
+				})
 		}
 	case StagePlaying:
 		if t.TimeLeft <= 0 {

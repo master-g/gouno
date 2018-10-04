@@ -29,14 +29,14 @@ import (
 var enterGameHandler = &FrameHandler{
 	ReqCmd:  pb.GameCmd_ENTER_GAME_REQ,
 	RespCmd: pb.GameCmd_ENTER_GAME_RESP,
-	Handler: func(c *Client, t *Table, frame pb.Frame) (resp []byte, status int32, msg string, err error) {
+	Handler: func(c *Client, t *Table, frame pb.Frame) (result HandleResult) {
 		// prepare response
 		state := HideCardsForUID(t.DumpState(), c.UID)
-		resp, err = proto.Marshal(state)
-		if err != nil {
-			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
-			msg = err.Error()
-			log.Error("error while marshaling proto", zap.Error(err))
+		result.Body, result.Err = proto.Marshal(state)
+		if result.Err != nil {
+			result.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			result.Msg = result.Err.Error()
+			log.Error("error while marshaling proto", zap.Error(result.Err))
 			return
 		}
 

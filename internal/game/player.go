@@ -63,14 +63,16 @@ func NewPlayerState(uid uint64) *PlayerState {
 	}
 }
 
-// HasCard return true if player have card
-func (p PlayerState) HasCard(card uint8) bool {
-	for _, v := range p.Cards {
+// CardIndex return index of the card, if not exist, -1 will be returned
+func (p PlayerState) CardIndex(card uint8) int {
+	index := -1
+	for i, v := range p.Cards {
 		if v == card {
-			return true
+			index = i
+			break
 		}
 	}
-	return false
+	return index
 }
 
 // HideCardsForUID will hide other player's cards for player with given uid

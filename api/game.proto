@@ -19,16 +19,18 @@ enum GameCmd {
 }
 
 enum Event {
-    EVENT_RESERVED          = 0; // Reserved
-    EVENT_TURN              = 1; // player's turn
-    EVENT_PLAY              = 2; // player play card
-    EVENT_UNO_PLAY          = 3; // player play card and say uno
-    EVENT_DRAW              = 4; // player draw cards from deck
-    EVENT_SKIP              = 5; // player skip
-    EVENT_CHALLENGE         = 6; // player challenge last player's wild+4 card
-    EVENT_CHALLENGE_PENALTY = 7; // player challenge success or failed
-    EVENT_TIMEOUT           = 8; // player timeout
-    EVENT_DECK_SHUFFLE      = 9; // deck ran out, re-shuffle
+    EVENT_RESERVED          = 0;  // Reserved
+    EVENT_TURN              = 1;  // player's turn
+    EVENT_PLAY              = 2;  // player play card
+    EVENT_UNO_PLAY          = 3;  // player play card and say uno
+    EVENT_DRAW              = 4;  // player draw cards from deck
+    EVENT_KEEP              = 5;  // player keep the card after drawn
+    EVENT_SKIP              = 6;  // player skip
+    EVENT_CHALLENGE         = 7;  // player challenge last player's wild+4 card
+    EVENT_CHALLENGE_PENALTY = 8;  // player challenge success or failed
+    EVENT_TIMEOUT           = 9;  // player timeout
+    EVENT_DECK_SHUFFLE      = 10; // deck ran out, re-shuffle
+    EVENT_REVERSE           = 11; // someone play reverse card
 }
 
 enum Action {
@@ -36,7 +38,9 @@ enum Action {
     ACTION_PLAY      = 1; // player try to play a card
     ACTION_UNO_PLAY  = 2; // player try to play a card with uno said
     ACTION_DRAW      = 3; // player try to draw a card from deck
-    ACTION_CHALLENGE = 4; // player challenge last player's wild draw 4
+    ACTION_KEEP      = 4; // player choose to keep the card draw from deck
+    ACTION_CHALLENGE = 5; // player challenge last player's wild draw 4
+    ACTION_ACCEPT    = 6; // player accept last player's wild draw 4
 }
 
 enum ActionResult {
@@ -60,7 +64,7 @@ enum PlayerStatus {
     STATUS_UNO       = 0x01; // uno flag
     STATUS_SKIP      = 0x02; // force skip this round
     STATUS_DRAW      = 0x04; // player has draw a card from deck
-    STATUS_CHALLENGE = 0x08; // player challenge last player's wild draw 4
+    STATUS_CHALLENGE = 0x08; // player can challenge last player's wild draw 4
 }
 
 message UnoPlayer {

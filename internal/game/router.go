@@ -23,17 +23,28 @@ package game
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/master-g/gouno/api/pb"
 	"go.uber.org/zap"
 )
 
-type handlerFunc func(c *Client, t *Table, frame pb.Frame) (resp []byte, status int32, msg string, err error)
+type handlerFunc func(c *Client, t *Table, frame pb.Frame) (result HandleResult)
 
 // FrameHandler process client frames
 type FrameHandler struct {
 	ReqCmd  pb.GameCmd
-	RespCmd pb.GameCmd // TODO: not used
+	RespCmd pb.GameCmd
 	Handler handlerFunc
+}
+
+// HandleResult wraps up handler function results
+type HandleResult struct {
+	Body      []byte
+	Status    int32
+	Broadcast proto.Message
+	Msg       string
+	Err       error
 }
 
 func (h *FrameHandler) String() string {
@@ -59,22 +70,24 @@ func registerAllHandlers() {
 
 func route(c *Client, t *Table, frame pb.Frame) {
 	if h, ok := handlerMap[frame.Cmd]; ok {
-		// valid command, clear offline flag
-		c.ClearFlagOffline()
-
 		// TODO: change Handler result from frame to bytes
-		body, status, msg, err := h.Handler(c, t, frame)
-		if err != nil {
-			log.Error("error while handling game cmd", zap.String("handler", h.String()), zap.String("req", frame.String()))
+		result := h.Handler(c, t, frame)
+		if result.Err != nil {
+			log.Error("error while handling game cmd", zap.String("handler", h.String()), zap.String("req", frame.String()), zap.Error(result.Err))
 			return
+		}
+
+		if result.Status == int32(pb.StatusCode_STATUS_OK) {
+			// valid command, clear offline flag
+			c.ClearFlagOffline()
 		}
 
 		resp := pb.Frame{
 			Type:    pb.FrameType_Message,
-			Status:  status,
+			Status:  result.Status,
 			Cmd:     int32(h.RespCmd),
-			Message: msg,
-			Body:    body,
+			Message: result.Msg,
+			Body:    result.Body,
 		}
 
 		select {

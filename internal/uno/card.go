@@ -31,6 +31,10 @@ import (
 // Uno card types
 const (
 	CardSetSize int = 108
+	CardCount1  int = 1
+	CardCount2  int = 2
+	CardCount4  int = 4
+	CardCount7  int = 7
 )
 
 // Uno card colors
@@ -187,7 +191,8 @@ func (d *Deck) DealFirstCard() (c uint8) {
 	return
 }
 
-func (d *Deck) deals(num int) (c []uint8, err error) {
+// Deals deal num of card from deck, if there are not enough card in deck, error will be returned
+func (d *Deck) Deals(num int) (c []uint8, err error) {
 	if len(d.cards) < num {
 		err = ErrorNoEnoughCards
 		return
@@ -195,21 +200,6 @@ func (d *Deck) deals(num int) (c []uint8, err error) {
 	c = d.cards[0:num]
 	d.cards = d.cards[num:]
 	return
-}
-
-// Deal2 deals 2 cards from deck
-func (d *Deck) Deal2() (c []uint8, err error) {
-	return d.deals(2)
-}
-
-// Deal4 deals 4 cards from deck
-func (d *Deck) Deal4() (c []uint8, err error) {
-	return d.deals(4)
-}
-
-// Deal7 deals 7 cards from deck
-func (d *Deck) Deal7() (c []uint8, err error) {
-	return d.deals(7)
 }
 
 // Shuffle cards in deck
