@@ -34,6 +34,7 @@ const (
 	CardCount1  int = 1
 	CardCount2  int = 2
 	CardCount4  int = 4
+	CardCount6  int = 6
 	CardCount7  int = 7
 )
 

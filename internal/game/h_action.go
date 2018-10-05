@@ -73,9 +73,9 @@ var actionReqHandler = &FrameHandler{
 		case int32(pb.Action_ACTION_KEEP):
 			handleKeep(t, req, state, body, &result)
 		case int32(pb.Action_ACTION_CHALLENGE):
-			handleChallenge(c, t, req, state, body, &result)
+			handleChallenge(t, req, state, body, &result)
 		case int32(pb.Action_ACTION_ACCEPT):
-			handleAccept(c, t, req, state, body, &result)
+			handleAccept(t, req, state, body, &result)
 		default:
 			result.Status = int32(pb.StatusCode_STATUS_INVALID)
 			result.Msg = "invalid action"
@@ -165,6 +165,8 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
 	state.Timeout = false
 
+	t.LastPlayer = state.UID
+
 	// events
 	playEvent := &pb.SingleEvent{
 		Uid:   state.UID,
@@ -178,7 +180,6 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	result.Events = append(result.Events, playEvent)
 
 	// action card effects
-	var err error
 	var drawCount int
 	skip := false
 
@@ -207,18 +208,7 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 
 	if drawCount > 0 {
 		// draw cards
-		drawEvent := &pb.SingleEvent{
-			Uid:   nextPlayerUID,
-			Event: int32(pb.Event_EVENT_DRAW),
-		}
-		drawEvent.Card, err = t.Deck.Deals(drawCount)
-		if err != nil {
-			// re-shuffle if needed
-			result.Events = append(result.Events, t.recycleDiscardPile())
-			drawEvent.Card, _ = t.Deck.Deals(drawCount)
-		}
-
-		result.Events = append(result.Events, drawEvent)
+		drawCards(t, nextPlayerUID, drawCount, result)
 	}
 
 	if skip {
@@ -238,16 +228,7 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	// check for uno
 	if (len(state.Cards) == 1 && action.Action != int32(pb.Action_ACTION_UNO_PLAY)) || (len(state.Cards) > 1 && action.Action == int32(pb.Action_ACTION_UNO_PLAY)) {
 		// penalty
-		drawEvent := &pb.SingleEvent{
-			Uid:   state.UID,
-			Event: int32(pb.Event_EVENT_DRAW),
-		}
-		drawEvent.Card, err = t.Deck.Deals(uno.CardCount2)
-		if err != nil {
-			// re-shuffle if needed
-			result.Events = append(result.Events, t.recycleDiscardPile())
-			drawEvent.Card, _ = t.Deck.Deals(uno.CardCount2)
-		}
+		drawCards(t, state.UID, uno.CardCount2, result)
 	}
 
 	// there might be re-shuffle before, so put card in discard pile here
@@ -267,43 +248,141 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 }
 
 func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
-	result.Events = make([]*pb.SingleEvent, 1)
+	result.Events = make([]*pb.SingleEvent, 0)
 	state.SetFlag(int32(pb.PlayerStatus_STATUS_DRAW))
-	card, err := t.Deck.Deal()
-	if err != nil {
-		// re-shuffle if needed
-		result.Events = append(result.Events, t.recycleDiscardPile())
-		card, _ = t.Deck.Deal()
-	}
-	result.Events[0] = &pb.SingleEvent{
-		Event: int32(pb.Event_EVENT_DRAW),
-		Card:  make([]uint8, 1),
-	}
-	result.Events[0].Card[0] = card
-
+	card := drawCards(t, state.UID, 1, result)
 	body.Card = make([]uint8, 1)
-	body.Card[0] = card
+	body.Card[0] = card[0]
 
 	// reset timeout
 	t.TimeLeft = t.Timeout
 }
 
 func handleKeep(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
-	result.Events = make([]*pb.SingleEvent, 1)
-	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
-	result.Events[0] = &pb.SingleEvent{
-		Event: int32(pb.Event_EVENT_KEEP),
+	result.Status = int32(pb.StatusCode_STATUS_OK)
+	if !state.IsFlagSet(int32(pb.PlayerStatus_STATUS_DRAW)) {
+		result.Status = int32(pb.StatusCode_STATUS_INVALID)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "you can only keep after drawing"
+		return
 	}
+
+	result.Events = make([]*pb.SingleEvent, 0)
+	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
+	result.Events = append(result.Events, &pb.SingleEvent{
+		Event: int32(pb.Event_EVENT_KEEP),
+	})
 
 	state.Timeout = false
 	t.CurrentPlayer = t.nextPlayer()
 	t.TimeLeft = t.Timeout
 }
 
-func handleChallenge(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+	result.Status = int32(pb.StatusCode_STATUS_OK)
+	if !state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
+		result.Status = int32(pb.StatusCode_STATUS_INVALID)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "you can only challenge after a wild draw 4"
+		return
+	}
+	// double check
+	if len(t.Discard) < 2 || uno.CardValue(t.Discard[len(t.Discard)-1]) != uno.ValueWildDraw4 {
+		result.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "oops, something went wrong"
+		return
+	}
 
+	// wild+4 will not trigger re-shuffle immediately
+	prevCard := t.Discard[len(t.Discard)-2]
+	// find if there are any available card
+	lastPlayer, ok := t.stateMap[t.LastPlayer]
+	if !ok {
+		result.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "oops, something went wrong, check LastPlayer logic"
+		return
+	}
+	penalty := false
+	for _, c := range lastPlayer.Cards {
+		cardValue := uno.CardValue(c)
+		cardColor := uno.CardColor(c)
+		if cardValue == uno.ValueWild || cardColor == uno.CardColor(prevCard) || cardValue == uno.CardValue(prevCard) {
+			penalty = true
+			break
+		}
+	}
+
+	result.Events = make([]*pb.SingleEvent, 0)
+	state.ClearFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
+
+	if penalty {
+		// challenge success
+		// last player draw 4 cards, and wild + 4 remains in discard pile
+		drawCards(t, lastPlayer.UID, uno.CardCount4, result)
+	} else {
+		// challenge failed
+		// this player draw 6 cards, and miss his turn
+		drawCards(t, state.UID, uno.CardCount6, result)
+		t.CurrentPlayer = t.nextPlayer()
+	}
+
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
+
+	// reset timeout
+	result.Events = append(result.Events, &pb.SingleEvent{
+		Uid:   t.CurrentPlayer,
+		Event: int32(pb.Event_EVENT_TURN),
+	})
 }
 
-func handleAccept(c *Client, t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
+	result.Status = int32(pb.StatusCode_STATUS_OK)
+	if !state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
+		result.Status = int32(pb.StatusCode_STATUS_INVALID)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "you can only challenge after a wild draw 4"
+		return
+	}
+	// double check
+	if len(t.Discard) < 2 || uno.CardValue(t.Discard[len(t.Discard)-1]) != uno.ValueWildDraw4 {
+		result.Status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
+		result.Msg = "oops, something went wrong"
+		return
+	}
 
+	drawCards(t, state.UID, uno.CardCount4, result)
+	t.CurrentPlayer = t.nextPlayer()
+
+	state.ClearFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
+
+	// reset timeout
+	result.Events = append(result.Events, &pb.SingleEvent{
+		Uid:   t.CurrentPlayer,
+		Event: int32(pb.Event_EVENT_TURN),
+	})
+}
+
+func drawCards(t *Table, uid uint64, num int, result *HandleResult) []uint8 {
+	card, err := t.Deck.Deals(num)
+	if err != nil {
+		// re-shuffle if needed
+		result.Events = append(result.Events, t.recycleDiscardPile())
+		card, _ = t.Deck.Deals(num)
+	}
+	drawEvent := &pb.SingleEvent{
+		Uid:   uid,
+		Event: int32(pb.Event_EVENT_DRAW),
+		Card:  make([]uint8, num),
+	}
+	copy(drawEvent.Card, card)
+
+	result.Events = append(result.Events, drawEvent)
+
+	return card
 }
