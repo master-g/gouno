@@ -368,6 +368,7 @@ func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb
 	})
 }
 
+// helper function
 func drawCards(t *Table, uid uint64, num int, result *HandleResult) []uint8 {
 	card, err := t.Deck.Deals(num)
 	if err != nil {
