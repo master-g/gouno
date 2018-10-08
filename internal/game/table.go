@@ -556,7 +556,7 @@ func (t *Table) start(wg *sync.WaitGroup) {
 			route(inFrame.C, t, *inFrame.F)
 		case <-ticker.C:
 			// state machine here
-			log.Debug("table tick")
+			// log.Debug("table tick")
 			t.tick()
 		case <-signal.InterruptChan:
 			log.Debug("system terminal signal received in table")
