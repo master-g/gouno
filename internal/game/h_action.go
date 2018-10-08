@@ -99,20 +99,22 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	result.Status = int32(pb.StatusCode_STATUS_OK)
 	// if CHALLENGE flag is set, play can only choose to accept or challenge
 	if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
+		result.Msg = "you can only challenge or accept wild draw 4"
 		result.Status = int32(pb.StatusCode_STATUS_INVALID)
 		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
-		result.Msg = "you can only challenge or accept wild draw 4"
 		return
 	}
 	// must play one card
 	if len(action.Card) != 1 {
+		result.Msg = "only one card are allowed"
 		result.Status = int32(pb.StatusCode_STATUS_INVALID)
 		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
 		return
 	}
 	// must play his/her own card
 	cardIndex := 0
-	if cardIndex = state.CardIndex(action.Card[0]); cardIndex != -1 {
+	if cardIndex = state.CardIndex(action.Card[0]); cardIndex == -1 {
+		result.Msg = "card does not exists"
 		result.Status = int32(pb.StatusCode_STATUS_INVALID)
 		body.Result = int32(pb.ActionResult_ACTION_RESULT_CARD_NOT_EXIST)
 		return
@@ -122,6 +124,7 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 		// player draw card from deck
 		if cardIndex != len(state.Cards)-1 {
 			// player must play or keep its last draw card after draw
+			result.Msg = "you can only keep or play the card from your last draw"
 			result.Status = int32(pb.StatusCode_STATUS_INVALID)
 			body.Result = int32(pb.ActionResult_ACTION_RESULT_NOT_DRAW_CARD)
 			return
@@ -144,12 +147,14 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 		// last card in discard pile is wild/wild+4
 		if actionColor != discardTopColor {
 			// must match wild color
+			result.Msg = "color mismatched"
 			result.Status = int32(pb.StatusCode_STATUS_INVALID)
 			body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
 			return
 		}
 	} else if actionValue != discardTopValue && actionColor != discardTopColor {
 		// one of the value/color must match the top of the discard pile
+		result.Msg = "color or value must match with the last card played"
 		result.Status = int32(pb.StatusCode_STATUS_INVALID)
 		body.Result = int32(pb.ActionResult_ACTION_RESULT_INVALID)
 		return
@@ -276,6 +281,11 @@ func handleKeep(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	state.Timeout = false
 	t.CurrentPlayer = t.nextPlayer()
 	t.TimeLeft = t.Timeout
+
+	result.Events = append(result.Events, &pb.SingleEvent{
+		Uid:   t.CurrentPlayer,
+		Event: int32(pb.Event_EVENT_TURN),
+	})
 }
 
 func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
@@ -328,10 +338,10 @@ func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body 
 		t.CurrentPlayer = t.nextPlayer()
 	}
 
+	// reset timeout
 	state.Timeout = false
 	t.TimeLeft = t.Timeout
 
-	// reset timeout
 	result.Events = append(result.Events, &pb.SingleEvent{
 		Uid:   t.CurrentPlayer,
 		Event: int32(pb.Event_EVENT_TURN),

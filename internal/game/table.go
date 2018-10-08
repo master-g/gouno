@@ -514,7 +514,6 @@ func (t *Table) tick() {
 				return
 			}
 			if playerState.Timeout {
-				// TODO: AI kicks in
 				log.Info("AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
 				ai(t, t.clientMap[t.CurrentPlayer])
 			} else {

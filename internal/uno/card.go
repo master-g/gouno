@@ -65,23 +65,17 @@ const (
 	ValueWildDraw4 uint8 = 0x0F
 )
 
-// CardMake make a uno card with given card type, color and value
-func CardMake(t, color, value uint8) uint8 {
+// CardMake make a uno card with given card color and value
+func CardMake(color, value uint8) uint8 {
 	var card uint8
-	card |= uint8(t)
 	card |= uint8(color)
 	card |= uint8(value)
 	return card
 }
 
-// CardType returns the type of the card c
-func CardType(c uint8) uint8 {
-	return c & 0x80
-}
-
 // CardColor returns the color of the card c
 func CardColor(c uint8) uint8 {
-	return c & 0x70
+	return c & 0xF0
 }
 
 // CardValue returns the value of the card c
