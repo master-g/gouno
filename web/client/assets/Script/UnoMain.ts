@@ -5,7 +5,7 @@ import ProtoMessage from "./proto/ProtoMessage";
 import L from "./base/log/Log";
 
 @ccclass
-export default class Helloworld extends cc.Component {
+export default class UnoMain extends cc.Component {
     heartbeatHandler: number = -1;
 
     start() {
