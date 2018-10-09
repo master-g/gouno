@@ -69,7 +69,6 @@ func registerAllHandlers() {
 
 func route(c *Client, t *Table, frame pb.Frame) {
 	if h, ok := handlerMap[frame.Cmd]; ok {
-		// TODO: change Handler result from frame to bytes
 		result := h.Handler(c, t, frame)
 		if result.Err != nil {
 			log.Error("error while handling game cmd", zap.String("handler", h.String()), zap.String("req", frame.String()), zap.Error(result.Err))
