@@ -1,0 +1,97 @@
+syntax = "proto3";
+package proto.game;
+option go_package = "github.com/master-g/gouno/proto/pb";
+
+// Command Codes
+// S -> C : even
+// C -> S : odd
+enum GameCmd {
+    GAME_RESERVED   = 0;      //
+    ENTER_GAME_REQ  = 0x2001; // C->S client request to enter a new game or resume an old one
+    ENTER_GAME_RSP  = 0x2002; // S->C response to ENTER_GAME
+    ACTION_REQ      = 0x2003; // C->S player take action
+    ACTION_RSP      = 0x2004; // S->C action response
+    EVENT_NTY       = 0x2006; // S->C event broadcast
+    PLAYER_JOIN_NTY = 0x2008; // S->C player join the game notification
+    PLAYER_LEFT_NTY = 0x200A; // S->C player left the game notification
+    GAME_START_NTY  = 0x200C; // S->C game start notification
+    GAME_OVER_NTY   = 0x200E; // S->C game over
+}
+
+enum Event {
+    EVENT_TURN              = 0; // player's turn
+    EVENT_PLAY              = 1; // player play card
+    EVENT_UNO_PLAY          = 2; // player play card and say uno
+    EVENT_DRAW              = 3; // player draw cards from deck
+    EVENT_SKIP              = 4; // player skip
+    EVENT_CHALLENGE         = 5; // player challenge last player's wild+4 card
+    EVENT_CHALLENGE_PENALTY = 6; // player challenge success or failed
+    EVENT_TIMEOUT           = 7; // player timeout
+    EVENT_DECK_SHUFFLE      = 8; // deck ran out, re-shuffle
+}
+
+enum CardColor {
+    COLOR_RED    = 0x00; // red
+    COLOR_YELLOW = 0x10; // yellow
+    COLOR_BLUE   = 0x20; // blue
+    COLOR_GREEN  = 0x30; // green
+}
+
+enum PlayerStatus {
+    STATUS_DEFAULT   = 0;    // default state
+    STATUS_UNO       = 0x01; // uno flag
+    STATUS_SKIP      = 0x02; // force skip this round
+    STATUS_CHALLENGE = 0x04; // player challenge last player's wild draw 4
+}
+
+message UnoPlayer {
+    fixed64 uid    = 1; // user id
+    int32   status = 3; // status flag
+    bytes   cards  = 4; // uno cards
+}
+
+enum TableStatus {
+    STATUS_IDLE      = 0; // table is waiting for more player to start the game
+    STATUS_WAIT      = 1; // game is about to begin in few seconds
+    STATUS_PLAYING   = 2; // game is running
+    STATUS_GAME_OVER = 3; // game is over, will change to IDLE or WAIT in few seconds
+}
+
+message TableState {
+    fixed64     tid            = 1;  // table id
+    TableStatus status         = 2;  // table status
+    int32       timeout        = 3;  // timeout of the stage
+    int32       time_left      = 4;  // time left in seconds
+    bool        clockwise      = 5;  // current direction
+    fixed64     last_player    = 6;  // last player
+    fixed64     current_player = 7;  // current player
+    int32       cards_left     = 8;  // cards left in deck, can be calculated
+    bytes       discard_pile   = 9;  // discard pile for played cards
+    repeated UnoPlayer players = 10; // player list
+}
+
+message S2CPlayerJoinNty {
+    fixed64 uid = 1; // user id
+}
+
+message S2CPlayerLeftNty {
+    fixed64 uid = 1; // user id
+}
+
+message C2SAction {
+    int32 event      = 1; // event as action
+    bytes card       = 2; // card played
+    int32 wild_color = 3; // player play wild and select next play color
+}
+
+message S2CEventNty {
+    fixed64 uid        = 1; // player uid
+    int32   event      = 2; // action
+    int32   wild_color = 3; // player play wild and select next play color
+    bytes   card       = 4; // cards involved
+}
+
+message S2CGameOverNty {
+    repeated fixed64 ranks = 1; // list of uid
+    repeated int32 scores  = 2; // list of scores
+}

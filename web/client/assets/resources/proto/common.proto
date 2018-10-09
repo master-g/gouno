@@ -1,0 +1,116 @@
+syntax = "proto3";
+package proto.common;
+option go_package = "github.com/master-g/gouno/proto/pb";
+
+// Command Codes
+// S -> C : even
+// C -> S : odd
+enum Cmd {
+    RESERVED = 0;
+    // Common Commands, handle by agent
+    HEART_BEAT_REQ = 0x1001; // C->S heartbeat request
+    HEART_BEAT_RSP = 0x1002; // S->C heartbeat response
+    KICK_NOTIFY    = 0x1004; // S->C kick notification
+    HANDSHAKE_REQ  = 0x1011; // C->S handshake request
+    HANDSHAKE_RSP  = 0x1012; // S->C handshake response
+    LOGOUT_REQ     = 0x1023; // C->S logout request
+    LOGOUT_RSP     = 0x1024; // S->C logout response
+    OFFLINE_REQ    = 0x1087; // C->S offline request
+    PING_REQ       = 0x1091; // C->S ping request
+    PING_RSP       = 0x1092; // S->C ping response
+    CMD_COMMON_END = 0x2000; // Reserved
+}
+
+// Status Code similar to http status code
+enum StatusCode {
+    STATUS_OK             = 0;    // request proceed with no error
+    STATUS_INVALID        = 4000; // parameter,service, data, whatever invalid
+    STATUS_UNAUTH         = 4001; // request needs authentication first
+    STATUS_UNKNOWN_CMD    = 4004; // invalid command code
+    STATUS_TIMEOUT        = 4008; // request timeout
+    STATUS_TOO_MANY_REQ   = 4029; // too many request
+    STATUS_INTERNAL_ERROR = 5000; // server internal error
+    STATUS_UNAVAILABLE    = 5003; // server offline or unavailable
+}
+
+enum Gender {
+    GENDER_UNKNOWN = 0;
+    GENDER_FEMALE  = 1;
+    GENDER_MALE    = 2;
+}
+
+enum AccountStatus {
+    ACCOUNT_STATUS_NORMAL     = 0;
+    ACCOUNT_STATUS_RESTRICTED = 1;
+    ACCOUNT_STATUS_BANNED     = 2;
+    ACCOUNT_STATUS_DELETED    = 4;
+    ACCOUNT_STATUS_BOT        = 8;
+    ACCOUNT_STATUS_OFFICIAL   = 16;
+}
+
+enum DeviceType {
+    DEVICE_TYPE_UNKNOWN = 0;
+    DEVICE_TYPE_BROWSER = 1;
+    DEVICE_TYPE_IOS     = 2;
+    DEVICE_TYPE_ANDROID = 3;
+}
+
+// Client request header
+message C2SHeader {
+    int32      version     = 1; // protocol version
+    int32      cmd         = 2; // command
+    uint64     seq         = 3; // packet sequence
+    fixed64    uid         = 4; // user id
+    ClientInfo client_info = 5; // client info
+    bytes      body        = 6; // request protobuf marshaled
+}
+
+// Server response header
+message S2CHeader {
+    int32   cmd       = 1; // command
+    uint64  seq       = 2; // server packet sequence
+    int32   status    = 3; // see ResultCode and other status definitions
+    fixed64 timestamp = 4; // server timestamp
+    string  msg       = 5; // extra message returned by server
+    bytes   body      = 6; // response protobuf marshaled
+}
+
+// Client info
+message ClientInfo {
+    int32   device_type = 1; // last login device type
+    fixed64 timestamp   = 2; // client timestamp
+    string  os          = 3; // client os identity
+    string  os_locale   = 4; // client os locale
+    string  app_version = 5; // last login client application version
+    string  app_locale  = 6; // client application locale
+    string  timezone    = 7; // client timezone
+    int32   mcc         = 8; // mcc code
+}
+
+//-----------------------------------------------------------------------------
+// Agent
+
+// Handshake request
+// C->S
+message C2SHandshakeReq {
+    string udid = 1; // user device unique id
+}
+
+// Handshake response
+// S->C
+message S2CHandshakeRsp {
+    string token = 1; // token
+}
+
+enum KickReason {
+    KICK_NO_REASON         = 0;
+    KICK_LOGIN_ELSEWHERE   = 1; // User login from elsewhere
+    KICK_SESSION_EXPIRED   = 2; // ...
+    KICK_ILLEGAL_OPERATION = 3; //
+    KICK_BANNED            = 4; // User gets banned
+}
+
+message S2CKickNotify {
+    KickReason reason = 2; // Kick reason
+    string     msg    = 3; // Kick message
+}
