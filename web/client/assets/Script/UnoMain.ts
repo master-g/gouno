@@ -3,9 +3,14 @@ const { ccclass, property } = cc._decorator;
 import NETWORKMGR, { NetworkManager } from "./base/network/NetworkManager";
 import ProtoMessage from "./proto/ProtoMessage";
 import L from "./base/log/Log";
+import UnoCard from "./component/UnoCard";
+import { CardSet } from "./uno/Uno";
 
 @ccclass
 export default class UnoMain extends cc.Component {
+    @property(cc.Prefab)
+    private prefabCard: cc.Prefab = null;
+
     heartbeatHandler: number = -1;
 
     start() {
@@ -47,6 +52,30 @@ export default class UnoMain extends cc.Component {
         NETWORKMGR.addMessageCallback(this.onMessage);
 
         NETWORKMGR.conn("ws://localhost:9009/ws");
+
+        if (this.prefabCard == null) {
+            return;
+        }
+
+        window.setInterval(() => {
+            const x = cc.randomMinus1To1() * 60;
+            const y = cc.randomMinus1To1() * 60;
+            const startRot = cc.randomMinus1To1() * 360;
+            const rot = cc.randomMinus1To1() * 360;
+            const duration = 0.6;
+
+            const v = CardSet[Math.floor(cc.random0To1() * CardSet.length)];
+
+            const c: UnoCard = cc
+                .instantiate(this.prefabCard)
+                .getComponent(UnoCard);
+            c.SetCard(v);
+            c.node.setPosition(-318, 439);
+            c.node.rotation = startRot;
+            this.node.addChild(c.node);
+            c.node.runAction(cc.rotateBy(duration, rot));
+            c.node.runAction(cc.moveTo(duration, cc.v2(x, y)));
+        }, 1500);
     }
 
     auth(): void {
