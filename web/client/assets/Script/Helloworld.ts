@@ -6,17 +6,10 @@ import L from "./base/log/Log";
 
 @ccclass
 export default class Helloworld extends cc.Component {
-    @property(cc.Label)
-    label: cc.Label = null;
-
-    @property(String)
-    text: string = "hello";
-
     heartbeatHandler: number = -1;
 
     start() {
         // init logic
-        this.label.string = this.text;
         ProtoMessage.clientInfo = {
             deviceType: 1, // webbrowser
             timestamp: Date.now(),
