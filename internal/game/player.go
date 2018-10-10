@@ -102,7 +102,7 @@ func (p PlayerState) Dump() *pb.UnoPlayer {
 	return state
 }
 
-// Score convert cards to score after game over
+// CalculateScore convert cards to score after game over
 func (p PlayerState) CalculateScore() int32 {
 	var score int32
 	for _, c := range p.Cards {
@@ -111,6 +111,7 @@ func (p PlayerState) CalculateScore() int32 {
 	return score
 }
 
+// ResetForNewGame reset player state for new game
 func (p *PlayerState) ResetForNewGame() {
 	p.Flag = 0
 	p.Score = 0

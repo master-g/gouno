@@ -23,10 +23,9 @@ package game
 import (
 	"math/rand"
 
-	"github.com/master-g/gouno/internal/uno"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
+	"github.com/master-g/gouno/internal/uno"
 	"github.com/master-g/gouno/pkg/signal"
 	"go.uber.org/zap"
 )

@@ -394,11 +394,10 @@ func (t *Table) nextStartPlayer() uint64 {
 	if t.startPlayer == 0 {
 		// new game
 		return t.Clients[rand.Intn(len(t.Clients))].UID
-	} else {
-		for i, c := range t.Clients {
-			if c.UID == t.startPlayer {
-				return t.Clients[(i+1)%len(t.Clients)].UID
-			}
+	}
+	for i, c := range t.Clients {
+		if c.UID == t.startPlayer {
+			return t.Clients[(i+1)%len(t.Clients)].UID
 		}
 	}
 	return 0
