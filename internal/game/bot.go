@@ -90,6 +90,12 @@ func handleEventNty(t *Table, bot *Client, body []byte) {
 	}
 	for _, e := range event.Events {
 		what := pb.Event(e.Event)
+		if what == pb.Event_EVENT_TURN && e.Uid == bot.UID {
+			// this is a little tricky here, by force a timeout
+			// the AI assist logic will kicks in after a random interval, without waiting for a TurnTimeout
+			t.TimeLeft = 0
+		}
+
 		log.Debug("bot got game event", zap.String("event", what.String()))
 	}
 }

@@ -23,8 +23,6 @@ package api
 import (
 	"errors"
 
-	"github.com/master-g/gouno/pkg/lntime"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/game"
@@ -32,6 +30,7 @@ import (
 	"github.com/master-g/gouno/internal/router"
 	"github.com/master-g/gouno/internal/sessions"
 	"github.com/master-g/gouno/pkg/crypto"
+	"github.com/master-g/gouno/pkg/lntime"
 	"go.uber.org/zap"
 )
 
@@ -97,9 +96,12 @@ var handshakeHandler = &router.Handler{
 			UID:         header.Uid,
 			ClientEntry: make(chan *game.Client),
 		}
-		// FIXME: this might block if client.tid is not set by table.registerClient
-		// add select with default here ?
+
+		// send register request to game server
 		game.Register <- registerReq
+
+		// wait for game client
+		// TODO: this might block if client.tid is not set by table.registerClient
 		s.Client = <-registerReq.ClientEntry
 
 		log.Debug("start fetch loop for session", zap.String("sess", s.String()))

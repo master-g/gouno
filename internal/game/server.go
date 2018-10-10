@@ -96,7 +96,7 @@ func registerClient(req *RegisterRequest) {
 				req.ClientEntry <- prevClient
 				prevClient.ClearFlagOffline()
 			} else {
-				// TODO: previous table not found, error, need fix if this happens
+				// FIXME: previous table not found, error, need fix if this happens
 				log.Error("client with dangling table", zap.String("client", prevClient.String()))
 			}
 		} else {

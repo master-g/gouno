@@ -20,7 +20,7 @@ gameover-timeout = 5
 idle-timeout = 3
 
 # timeout before starting a game
-Wait-timeout = 3
+wait-timeout = 3
 
 # timeout before playing
 prepare-timeout = 3
