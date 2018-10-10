@@ -97,6 +97,8 @@ var handshakeHandler = &router.Handler{
 			UID:         header.Uid,
 			ClientEntry: make(chan *game.Client),
 		}
+		// FIXME: this might block if client.tid is not set by table.registerClient
+		// add select with default here ?
 		game.Register <- registerReq
 		s.Client = <-registerReq.ClientEntry
 

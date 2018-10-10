@@ -40,8 +40,6 @@ const (
 
 // all packets from handleTCPConnection() will be handle here
 func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender) {
-	defer wg.Done()
-
 	// init session
 	s.Push = make(chan []byte, defaultPushQueueSize)
 	s.MQ = make(chan pb.Frame, defaultMQSize)
@@ -49,17 +47,20 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 	s.LastPacketTime = time.Now()
 	// auth timeout
 	authTimer := time.NewTimer(config.AuthTimeout)
-	defer authTimer.Stop()
 	// RPM limit
 	minuteTicker := time.NewTicker(time.Minute)
-	defer minuteTicker.Stop()
 
 	// cleanup
 	defer func() {
+		authTimer.Stop()
+		minuteTicker.Stop()
 		// notify handleTCPConnection()
 		close(s.MQ)
 		close(s.Die)
 		close(s.Push)
+
+		wg.Done()
+		log.Info("wait group dec")
 	}()
 
 	// **** MAIN MESSAGE LOOP ****

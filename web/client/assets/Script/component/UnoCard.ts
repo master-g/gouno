@@ -15,10 +15,14 @@ export default class UnoCard extends cc.Component {
     @property(cc.Sprite)
     private cardSprite: cc.Sprite = null;
 
-    public SetCard(u:number):void {
+    public onLoad() {
+        cc.loader.loadRes("atlas/unoCards", cc.SpriteAtlas, (err, atlas) => {});
+    }
+
+    public SetCard(u: number): void {
         this.card = u;
-        this.value = u & 0x0F;
-        this.color = u & 0xF0;
+        this.value = u & 0x0f;
+        this.color = u & 0xf0;
 
         if (this.cardSprite == null) {
             return;
@@ -62,7 +66,7 @@ export default class UnoCard extends cc.Component {
         });
     }
 
-    public SetHighlight(active: boolean):void {
+    public SetHighlight(active: boolean): void {
         if (this.highlight != null) {
             this.highlight.node.active = active;
         }

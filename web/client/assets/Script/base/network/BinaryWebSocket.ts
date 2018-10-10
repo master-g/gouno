@@ -139,7 +139,6 @@ export class BinaryWebSocket {
     }
 
     private onMessage = (e: any): void => {
-        L.w("[WS MESSAGE]", e);
         this._delegate.onMessage(e);
     }
 

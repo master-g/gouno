@@ -168,7 +168,6 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 
 	// clear player flag
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_DRAW))
-	state.Timeout = false
 
 	t.LastPlayer = state.UID
 
@@ -243,13 +242,15 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	if len(state.Cards) == 0 {
 		result.GameOver = true
 	} else {
-		// reset timeout
-		t.TimeLeft = t.Timeout
 		result.Events = append(result.Events, &pb.SingleEvent{
 			Uid:   nextPlayerUID,
 			Event: int32(pb.Event_EVENT_TURN),
 		})
 	}
+
+	// reset timeout
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
 }
 
 func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
@@ -260,6 +261,7 @@ func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	body.Card[0] = card[0]
 
 	// reset timeout
+	state.Timeout = false
 	t.TimeLeft = t.Timeout
 }
 
@@ -278,14 +280,15 @@ func handleKeep(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 		Event: int32(pb.Event_EVENT_KEEP),
 	})
 
-	state.Timeout = false
 	t.CurrentPlayer = t.nextPlayer()
-	t.TimeLeft = t.Timeout
 
 	result.Events = append(result.Events, &pb.SingleEvent{
 		Uid:   t.CurrentPlayer,
 		Event: int32(pb.Event_EVENT_TURN),
 	})
+
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
 }
 
 func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
@@ -338,14 +341,14 @@ func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body 
 		t.CurrentPlayer = t.nextPlayer()
 	}
 
-	// reset timeout
-	state.Timeout = false
-	t.TimeLeft = t.Timeout
-
 	result.Events = append(result.Events, &pb.SingleEvent{
 		Uid:   t.CurrentPlayer,
 		Event: int32(pb.Event_EVENT_TURN),
 	})
+
+	// reset timeout
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
 }
 
 func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S2CActionResp, result *HandleResult) {
@@ -368,14 +371,15 @@ func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb
 	t.CurrentPlayer = t.nextPlayer()
 
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
-	state.Timeout = false
-	t.TimeLeft = t.Timeout
 
 	// reset timeout
 	result.Events = append(result.Events, &pb.SingleEvent{
 		Uid:   t.CurrentPlayer,
 		Event: int32(pb.Event_EVENT_TURN),
 	})
+
+	state.Timeout = false
+	t.TimeLeft = t.Timeout
 }
 
 // helper function

@@ -179,10 +179,12 @@ func (t *Table) registerClient(req *RegisterRequest) {
 	// add client
 	client := &Client{
 		UID: req.UID,
+		TID: t.TID,
 		In:  make(chan pb.Frame),
 		Out: make(chan pb.Frame),
 		Die: make(chan struct{}),
 	}
+	clients.Store(req.UID, client)
 	t.Clients = append(t.Clients, client)
 
 	// add state

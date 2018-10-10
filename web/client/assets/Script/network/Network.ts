@@ -17,6 +17,7 @@ class Network {
 
     private listenerOnConnect:Listener[] = [];
     private listenerOnDisconnect:Listener[] = [];
+    private listenerMessage:Listener[][] = [];
 
     public init():void {
         // fake clien info
@@ -56,9 +57,33 @@ class Network {
         this.removeListener(target, this.listenerOnDisconnect);
     }
 
+    public registerOnNotify(cmd:number, target:Object, func:Function, once?:boolean):void {
+        const listener = new Listener(target, func);
+        listener.userdata = once ? true : false;
+        if (!this.listenerMessage[cmd]) {
+            this.listenerMessage[cmd] = [];
+        }
+        this.listenerMessage[cmd].push(listener);
+    }
+
+    public unregisterOnNotify(target:Object, cmd?:number):void {
+        for (let c in this.listenerMessage) {
+            if (cmd && c != ""+cmd) {
+                continue;
+            }
+            const listeners = this.listenerMessage[c];
+            listeners.forEach(function(listener, index, arr) {
+                if (listener.listener == listener) {
+                    arr.splice(index, 1);
+                }
+            });
+        }
+    }
+
     public unregisterAll(target:Object):void {
         this.unregisterOnConnect(target);
         this.unregisterOnDisconnect(target);
+        this.unregisterOnNotify(target);
     }
 
     private addListener(target:Object, func:Function, once:boolean, list:Listener[]):void {
@@ -132,15 +157,33 @@ class Network {
         ProtoMessage.Increment();
     }
 
-    private dispatchMessage(e):void {
-        L.d(Network.LOG_TAG, "TODO: dispatch message here");
-        const hdr = ProtoMessage.S2CHeader(new Uint8Array(e.data));
-        const msg = ProtoMessage.MapCmdToMessage(hdr.cmd, hdr.body);
-        if (msg == null) {
-            L.d(Network.LOG_TAG, hdr);
-        } else {
-            L.d(Network.LOG_TAG, msg);
+    private dispatchMessage(e:any):void {
+        if (!e || !e.data) {
+            L.d(Network.LOG_TAG, "unable to dispatch empty message");
+            return;
         }
+
+        let hdr = ProtoMessage.S2CHeader(new Uint8Array(e.data));
+        let msg = null;
+        if (hdr) {
+            msg = ProtoMessage.MapCmdToMessage(hdr.cmd, hdr.body);
+        } else {
+            L.e(Network.LOG_TAG, "failed to parse header");
+            return;
+        }
+
+        const cmdListeners = this.listenerMessage[hdr.cmd];
+        if (!cmdListeners) {
+            L.d(Network.LOG_TAG, "no listener for", hdr.cmd, `0x${hdr.cmd.toString(16)}`);
+            return;
+        }
+
+        cmdListeners.forEach(function(l, i, a) {
+            l.invoke(hdr, msg);
+            if (l.userdata) {
+                a.splice(i, 1);
+            }
+        })
     }
 }
 

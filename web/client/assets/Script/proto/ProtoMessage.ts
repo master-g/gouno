@@ -21,15 +21,6 @@ export interface ClientInfo {
     mcc: number | null;
 }
 
-export interface S2CHeader {
-    cmd: number | null;
-    seq: number | null;
-    status: number | null;
-    timestamp: number | Long | null;
-    msg: string | null;
-    body: Uint8Array | null;
-}
-
 export default class ProtoMessage {
     private static _clientInfo: ClientInfo;
 
@@ -105,7 +96,7 @@ export default class ProtoMessage {
 
     public static S2CHeader(buf: Uint8Array): proto.common.S2CHeader {
         try {
-            const d = proto.common.S2CHeader.decode(buf);
+            let d = proto.common.S2CHeader.decode(buf);
             return d;
         } catch (e) {
             L.e(e);

@@ -1,3 +1,5 @@
+import L from "../log/Log";
+
 export default class Listener {
     public listener: Object = null;
     public receiver: Function = null;
@@ -8,6 +10,6 @@ export default class Listener {
         this.receiver = receiver;
     }
     public invoke(...args: any[]): void {
-        this.receiver.call(this.listener, args);
+        this.receiver.call(this.listener, ...args);
     }
 }
