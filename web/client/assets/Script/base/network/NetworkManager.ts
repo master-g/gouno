@@ -1,5 +1,6 @@
 import L from "../log/Log";
 import { BinaryWebSocket, ISocketDelegate } from "./BinaryWebSocket";
+import Listener from "./Listener";
 
 export class NetworkManager implements ISocketDelegate {
     private static _instance: NetworkManager;
@@ -16,58 +17,58 @@ export class NetworkManager implements ISocketDelegate {
     private static CALLBACK_MESSAGE: number = 3;
     private static CALLBACK_SENT: number = 4;
 
-    private once: Function[][];
-    private callback: Function[][];
+    private once: Listener[][];
+    private callback: Listener[][];
 
     private constructor() {
         this.once = [];
         this.callback = [];
     }
 
-    public addConnectCallback(cb: Function, key?: string, once?: boolean): void {
-        this.addCallback(NetworkManager.CALLBACK_CONNECT, once, key, cb);
+    public addConnectCallback(target: Object, func: Function, key?: string, once?: boolean): void {
+        this.addCallback(NetworkManager.CALLBACK_CONNECT, once, key, target, func);
     }
 
     public removeConnectCallback(key: string, once?: boolean): boolean {
         return this.addCallback(NetworkManager.CALLBACK_CONNECT, once, key);
     }
 
-    public addDisconnectCallback(cb: Function, key?: string, once?: boolean): void {
-        this.addCallback(NetworkManager.CALLBACK_DISCONNECT, once, key, cb);
+    public addDisconnectCallback(target:Object, func: Function, key?: string, once?: boolean): void {
+        this.addCallback(NetworkManager.CALLBACK_DISCONNECT, once, key, target, func);
     }
 
     public removeDisconnectCallback(key: string, once?: boolean): boolean {
         return this.addCallback(NetworkManager.CALLBACK_DISCONNECT, once, key);
     }
 
-    public addErrorCallback(cb: Function, key?: string, once?: boolean): void {
-        this.addCallback(NetworkManager.CALLBACK_ERROR, once, key, cb);
+    public addErrorCallback(target:Object, func: Function, key?: string, once?: boolean): void {
+        this.addCallback(NetworkManager.CALLBACK_ERROR, once, key, target, func);
     }
 
     public removeErrorCallback(key: string, once?: boolean): boolean {
         return this.addCallback(NetworkManager.CALLBACK_ERROR, once, key);
     }
 
-    public addMessageCallback(cb: Function, key?: string, once?: boolean): void {
-        this.addCallback(NetworkManager.CALLBACK_MESSAGE, once, key, cb);
+    public addMessageCallback(target:Object, func: Function, key?: string, once?: boolean): void {
+        this.addCallback(NetworkManager.CALLBACK_MESSAGE, once, key, target, func);
     }
 
     public removeMessageCallback(key: string, once?: boolean): boolean {
         return this.addCallback(NetworkManager.CALLBACK_MESSAGE, once, key);
     }
 
-    public addSentCallback(cb: Function, key?: string, once?: boolean): void {
-        this.addCallback(NetworkManager.CALLBACK_SENT, once, key, cb);
+    public addSentCallback(target:Object, func: Function, key?: string, once?: boolean): void {
+        this.addCallback(NetworkManager.CALLBACK_SENT, once, key, target, func);
     }
 
     public removeSentCallback(key: string, once?: boolean): boolean {
         return this.addCallback(NetworkManager.CALLBACK_SENT, once, key);
     }
 
-    private addCallback(type: number, isOnce: boolean, key: string, cb?: Function): boolean {
+    private addCallback(type: number, isOnce: boolean, key: string, target?:Object, cb?: Function): boolean {
         let m = this.getCallbacks(type, isOnce);
         if (m && m[key]) {
-            if (!cb) {
+            if (!target||!cb) {
                 // delete success
                 delete (m[key])
                 return true;
@@ -81,11 +82,11 @@ export class NetworkManager implements ISocketDelegate {
         }
 
         // set
-        m[key] = cb;
+        m[key] = new Listener(target, cb);
         return true;
     }
 
-    private getCallbacks(type: number, isOnce: boolean): Map<string, Function> {
+    private getCallbacks(type: number, isOnce: boolean): Map<string, Listener> {
         let callbacks = null;
         if (isOnce) {
             callbacks = this.once;
@@ -103,7 +104,7 @@ export class NetworkManager implements ISocketDelegate {
         const onceMap = this.once[type];
         if (onceMap) {
             for (let i in onceMap) {
-                onceMap[i](data);
+                onceMap[i].invoke(data);
             }
             delete (this.once[type]);
         }
@@ -111,7 +112,7 @@ export class NetworkManager implements ISocketDelegate {
         const callMap = this.callback[type];
         if (callMap) {
             for (let i in callMap) {
-                callMap[i](data);
+                callMap[i].invoke(data);
             }
         }
     }
