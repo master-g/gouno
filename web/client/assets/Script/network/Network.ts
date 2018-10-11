@@ -11,16 +11,16 @@ class Network {
         return this._instance || (this._instance = new Network());
     }
 
-    private static TAG:string = "NIO";
-    private static LOG_TAG:string = "[NIO]";
+    private static TAG: string = "NIO";
+    private static LOG_TAG: string = "[NIO]";
 
-    private heartbeatTimer:number = -1;
+    private heartbeatTimer: number = -1;
 
-    private listenerOnConnect:Listener[] = [];
-    private listenerOnDisconnect:Listener[] = [];
-    private listenerMessage:Listener[][] = [];
+    private listenerOnConnect: Listener[] = [];
+    private listenerOnDisconnect: Listener[] = [];
+    private listenerMessage: Listener[][] = [];
 
-    public init():void {
+    public init(): void {
         // fake clien info
         ProtoMessage.clientInfo = {
             deviceType: 1, // webbrowser
@@ -33,6 +33,7 @@ class Network {
             mcc: 0
         };
         ProtoMessage.uid = this.uid();
+        L.w(Network.LOG_TAG, ProtoMessage.uid);
 
         // add callbacks
         NETWORKMGR.addConnectCallback(this, this.onConnect, Network.TAG);
@@ -41,24 +42,47 @@ class Network {
         NETWORKMGR.addMessageCallback(this, this.dispatchMessage, Network.TAG);
     }
 
-    public registerOnConnect(target:Object, func:Function, once?:boolean):void {
-        this.addListener(target, func, once ? true : false, this.listenerOnConnect);
+    public registerOnConnect(
+        target: Object,
+        func: Function,
+        once?: boolean
+    ): void {
+        this.addListener(
+            target,
+            func,
+            once ? true : false,
+            this.listenerOnConnect
+        );
     }
 
-    public registerOnDisconnect(target:Object, func:Function, once?:boolean):void {
-        this.addListener(target, func, once ? true : false, this.listenerOnDisconnect);
+    public registerOnDisconnect(
+        target: Object,
+        func: Function,
+        once?: boolean
+    ): void {
+        this.addListener(
+            target,
+            func,
+            once ? true : false,
+            this.listenerOnDisconnect
+        );
     }
 
-    public unregisterOnConnect(target:Object):void {
+    public unregisterOnConnect(target: Object): void {
         this.removeListener(target, this.listenerOnConnect);
         L.d(this.listenerOnConnect);
     }
 
-    public unregisterOnDisconnect(target:Object):void {
+    public unregisterOnDisconnect(target: Object): void {
         this.removeListener(target, this.listenerOnDisconnect);
     }
 
-    public registerOnNotify(cmd:number, target:Object, func:Function, once?:boolean):void {
+    public registerOnNotify(
+        cmd: number,
+        target: Object,
+        func: Function,
+        once?: boolean
+    ): void {
         const listener = new Listener(target, func);
         listener.userdata = once ? true : false;
         if (!this.listenerMessage[cmd]) {
@@ -67,9 +91,9 @@ class Network {
         this.listenerMessage[cmd].push(listener);
     }
 
-    public unregisterOnNotify(target:Object, cmd?:number):void {
+    public unregisterOnNotify(target: Object, cmd?: number): void {
         for (let c in this.listenerMessage) {
-            if (cmd && c != ""+cmd) {
+            if (cmd && c != "" + cmd) {
                 continue;
             }
             const listeners = this.listenerMessage[c];
@@ -81,19 +105,24 @@ class Network {
         }
     }
 
-    public unregisterAll(target:Object):void {
+    public unregisterAll(target: Object): void {
         this.unregisterOnConnect(target);
         this.unregisterOnDisconnect(target);
         this.unregisterOnNotify(target);
     }
 
-    private addListener(target:Object, func:Function, once:boolean, list:Listener[]):void {
+    private addListener(
+        target: Object,
+        func: Function,
+        once: boolean,
+        list: Listener[]
+    ): void {
         const listener = new Listener(target, func);
         listener.userdata = once;
         list.push(listener);
     }
 
-    private removeListener(target:Object, list:Listener[]):void {
+    private removeListener(target: Object, list: Listener[]): void {
         list.forEach(function(listener, index, array) {
             if (listener.listener == target) {
                 array.splice(index, 1);
@@ -101,12 +130,17 @@ class Network {
         });
     }
 
-    public conn(addr:string, cb?:Function):void {
+    public conn(addr: string, cb?: Function): void {
         NETWORKMGR.conn(addr);
     }
 
-    public sendEnterGame(target:Object, func:Function):void {
-        this.registerOnNotify(proto.game.GameCmd.ENTER_GAME_RESP, target, func, true);
+    public sendEnterGame(target: Object, func: Function): void {
+        this.registerOnNotify(
+            proto.game.GameCmd.ENTER_GAME_RESP,
+            target,
+            func,
+            true
+        );
         const enterReq = ProtoMessage.C2SEnterGame();
         NETWORKMGR.send(enterReq);
     }
@@ -116,24 +150,21 @@ class Network {
         NETWORKMGR.send(authReq);
     }
 
-    private uid():number {
+    private uid(): number {
         const hashFunc = function(str: string): number {
-            var hash = 0,
-                i,
-                chr;
-            if (str.length === 0) return hash;
-            for (i = 0; i < str.length; i++) {
-                chr = str.charCodeAt(i);
-                hash = (hash << 5) - hash + chr;
-                hash |= 0; // Convert to 32bit integer
+            let h = 0, l = str.length, i = 0;
+            if (l > 0) {
+                while(i < l) {
+                    h = (h << 5) - h + str.charCodeAt(i++) | 0;
+                }
             }
-            return hash;
+            return Math.abs(h);
         };
         const ua = "" + window.navigator.userAgent;
         return hashFunc(ua);
     }
 
-    private onConnect():void {
+    private onConnect(): void {
         this.auth();
         if (this.heartbeatTimer > 0) {
             window.clearInterval(this.heartbeatTimer);
@@ -153,23 +184,23 @@ class Network {
         });
 
         this.unregisterOnNotify(this, proto.common.Cmd.HEART_BEAT_RESP);
-        this.registerOnNotify(proto.common.Cmd.HEART_BEAT_RESP, this, ()=> {
+        this.registerOnNotify(proto.common.Cmd.HEART_BEAT_RESP, this, () => {
             L.d(Network.LOG_TAG + " HEARTBEAT");
         });
     }
 
-    private onDisconnect():void {
+    private onDisconnect(): void {
         if (this.heartbeatTimer > 0) {
             window.clearInterval(this.heartbeatTimer);
             this.heartbeatTimer = -1;
         }
     }
 
-    private onSent():void {
+    private onSent(): void {
         ProtoMessage.Increment();
     }
 
-    private dispatchMessage(e:any):void {
+    private dispatchMessage(e: any): void {
         if (!e || !e.data) {
             L.d(Network.LOG_TAG, "unable to dispatch empty message");
             return;
@@ -186,7 +217,12 @@ class Network {
 
         const cmdListeners = this.listenerMessage[hdr.cmd];
         if (!cmdListeners) {
-            L.d(Network.LOG_TAG, "no listener for", hdr.cmd, `0x${hdr.cmd.toString(16)}`);
+            L.d(
+                Network.LOG_TAG,
+                "no listener for",
+                hdr.cmd,
+                `0x${hdr.cmd.toString(16)}`
+            );
             return;
         }
 
@@ -195,7 +231,7 @@ class Network {
             if (l.userdata) {
                 a.splice(i, 1);
             }
-        })
+        });
     }
 }
 

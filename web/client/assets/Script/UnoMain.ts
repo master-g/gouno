@@ -6,6 +6,7 @@ import { CardSet, Card } from "./uno/Uno";
 import NIO from "./network/Network";
 import { proto } from "./proto/pb";
 import Circle from "./component/Circle";
+import ProtoMessage from "./proto/ProtoMessage";
 
 @ccclass
 export default class UnoMain extends cc.Component {
@@ -52,6 +53,7 @@ export default class UnoMain extends cc.Component {
                             this.dealCard(c, true);
                         });
                     }
+                    this.setPlayers(resp.players);
                 });
             }
         );
@@ -64,6 +66,7 @@ export default class UnoMain extends cc.Component {
                 body.discardPile.forEach(c => {
                     this.dealCard(c);
                 });
+                this.setPlayers(body.players);
             }
         );
 
@@ -120,5 +123,49 @@ export default class UnoMain extends cc.Component {
         }
 
         this.circleComponent.setCard(v);
+    }
+
+    addCardToPos(card, x, y: number): UnoCard {
+        const c: UnoCard = cc
+            .instantiate(this.prefabCard)
+            .getComponent(UnoCard);
+        c.SetCard(card);
+        c.node.setPosition(x, y);
+        this.node.addChild(c.node);
+
+        return c;
+    }
+
+    setSelfCards(cards: number[]): void {
+        if (!cards) {
+            return;
+        }
+
+        const d = 60;
+        let startX = 0;
+        if (cards.length % 2 == 1) {
+            startX = Math.floor(cards.length / 2) * -d;
+        } else {
+            startX = -(cards.length - 1) * d / 2;
+        }
+
+        L.d("start position", startX);
+
+        for (let i = 0; i < cards.length; i++) {
+            const c = cards[i];
+            this.addCardToPos(c, startX + d * i, -380);
+        }
+    }
+
+    setPlayers(players: any[]) {
+        if (!players || players.length == 0) {
+            // TODO: clear player
+            return;
+        }
+        players.forEach((p, i) => {
+            if (p.uid == ProtoMessage.uid) {
+                this.setSelfCards(p.cards);
+            }
+        });
     }
 }

@@ -45,6 +45,11 @@ var handshakeHandler = &router.Handler{
 	RespCmd:  pb.Cmd_HANDSHAKE_RESP,
 	AuthFree: true,
 	Handler: func(s *sessions.Session, header *pb.C2SHeader) (resp []byte, status int32, err error) {
+		if header.Uid == 0 {
+			status = int32(pb.StatusCode_STATUS_INVALID)
+			s.SetFlagKicked()
+			return
+		}
 		// parse request body
 		req := &pb.C2SHandshakeReq{}
 		err = proto.Unmarshal(header.Body, req)
