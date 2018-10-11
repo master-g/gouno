@@ -30,6 +30,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	botFace = "(●—●) "
+)
+
 // AddBot to table
 func AddBot(t *Table) {
 	retChan := make(chan *Client)
@@ -47,7 +51,7 @@ func AddBot(t *Table) {
 			case frame := <-bot.Out:
 				dispatchFrame(t, bot, frame)
 			case <-signal.InterruptChan:
-				log.Debug("bot receive signal.Interrupt")
+				log.Debug(botFace + "bot receive signal.Interrupt")
 				return
 			}
 		}
@@ -71,14 +75,14 @@ func genBotUID(t *Table) (uid uint64) {
 
 func dispatchFrame(t *Table, bot *Client, frame pb.Frame) {
 	cmd := pb.GameCmd(frame.Cmd)
-	log.Debug("bot try to handle frame", zap.String("cmd", cmd.String()), zap.String("msg", frame.Message))
+	// log.Debug(botFace+"bot try to handle frame", zap.String("cmd", cmd.String()), zap.String("msg", frame.Message))
 	switch cmd {
 	case pb.GameCmd_EVENT_NTY:
 		handleEventNty(t, bot, frame.Body)
 	case pb.GameCmd_ACTION_RESP:
 		handleActionResp(t, bot, frame.Body)
 	default:
-		log.Info("bot ignore frame for no handler", zap.String("cmd", cmd.String()))
+		log.Info(botFace+"bot ignore frame for no handler", zap.String("cmd", cmd.String()))
 	}
 }
 
@@ -94,9 +98,10 @@ func handleEventNty(t *Table, bot *Client, body []byte) {
 			// this is a little tricky here, by force a timeout
 			// the AI assist logic will kicks in after a random interval, without waiting for a TurnTimeout
 			t.TimeLeft = 0
+			log.Debug(botFace + "AI ready in few seconds")
 		}
 
-		log.Debug("bot got game event", zap.String("event", what.String()))
+		// log.Debug(botFace+"bot got game event", zap.String("event", what.String()))
 	}
 }
 
@@ -104,15 +109,15 @@ func handleActionResp(t *Table, bot *Client, body []byte) {
 	resp := pb.S2CActionResp{}
 	err := parse(body, &resp)
 	if err != nil {
+		log.Error(botFace+"bot got action resp", zap.String("resp", resp.String()), zap.Error(err))
 		return
 	}
-	log.Debug("bot got action resp", zap.String("resp", resp.String()))
 }
 
 func parse(body []byte, msg proto.Message) error {
 	err := proto.Unmarshal(body, msg)
 	if err != nil {
-		log.Fatal("game logic can't even unmarshal its own proto message", zap.Error(err))
+		log.Fatal(botFace+"game logic can't even unmarshal its own proto message", zap.Error(err))
 	}
 	return err
 }
@@ -128,7 +133,7 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 	colorMaxCount := 0
 
 	var wilds []int
-	var wilddraw4s []int
+	var wildDraw4s []int
 
 	var colorMatched []int
 	var valueMatched []int
@@ -151,7 +156,7 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 		} else if v == uno.ValueWild {
 			wilds = append(wilds, i)
 		} else {
-			wilddraw4s = append(wilddraw4s, i)
+			wildDraw4s = append(wildDraw4s, i)
 		}
 	}
 
@@ -181,6 +186,8 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 		// find value
 		if len(valueMatched) > 0 {
 			index = findMinValue(cards, valueMatched)
+		} else if len(colorMatched) > 0 {
+			index = findMinValue(cards, colorMatched)
 		}
 	}
 
@@ -188,48 +195,54 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 		// not found, find wild
 		index = wilds[0]
 	}
-	if index < 0 && len(wilddraw4s) > 0 {
+	if index < 0 && len(wildDraw4s) > 0 {
 		// not found, find wild draw 4
-		index = wilddraw4s[0]
+		index = wildDraw4s[0]
 	}
 
 	return
 }
 
 func ai(t *Table, bot *Client) {
+	log.Info(botFace+"AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
+
 	state, ok := t.stateMap[bot.UID]
 	if !ok {
-		log.Error("unable to find state of uid", zap.Uint64("uid", bot.UID))
+		log.Error(botFace+"unable to find state of uid", zap.Uint64("uid", bot.UID))
 		return
 	}
 
+	// log info
+	log.Info(botFace, zap.String("state", state.String()))
+
+	// prepare response
 	action := &pb.C2SActionReq{}
 
 	// what is last card
 	lastCard := t.Discard[len(t.Discard)-1]
 
-	log.Debug("🤖 last card is", zap.String("card", uno.CardToString(lastCard)))
+	log.Debug(botFace+"last card is", zap.String("card", uno.CardToString(lastCard)))
 
 	var cardToPlay uint8
 
 	if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
 		// wild draw 4 and offered chance to challenge
-		log.Debug("🤖 this player was offer an opportunity to challenge, but I always accept")
+		log.Debug(botFace + "this player was offer an opportunity to challenge, but I always accept")
 		action.Action = int32(pb.Action_ACTION_ACCEPT)
 	} else if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_DRAW)) {
 		// just draw from deck
 		drawCard := state.Cards[len(state.Cards)-1]
-		log.Debug("🤖 this player seems to have a card drawn from deck", zap.String("drawn", uno.CardToString(drawCard)))
+		log.Debug(botFace+"this player seems to have a card drawn from deck", zap.String("drawn", uno.CardToString(drawCard)))
 		drawCardValue := uno.CardValue(drawCard)
 		if drawCardValue == uno.ValueWildDraw4 {
 			// try to find solution in old cards
 			idx, maxColor := solve(state.Cards[:len(state.Cards)-1], lastCard)
 			if idx >= 0 {
 				// keep it to prevent challenge
-				log.Debug("🤖 wow, I don't want to bluff a wild draw 4, I will keep")
+				log.Debug(botFace + "wow, I don't want to bluff a wild draw 4, I will keep")
 				action.Action = int32(pb.Action_ACTION_KEEP)
 			} else {
-				log.Debug("🤖 legal wild draw 4, have at you!")
+				log.Debug(botFace + "legal wild draw 4, have at you!")
 				cardToPlay = uno.CardMake(maxColor, uno.ValueWildDraw4)
 			}
 		} else {
@@ -240,10 +253,10 @@ func ai(t *Table, bot *Client) {
 				} else {
 					cardToPlay = drawCard
 				}
-				log.Debug("🤖 the drawn card is good to play")
+				log.Debug(botFace + "the drawn card is good to play")
 			} else {
 				action.Action = int32(pb.Action_ACTION_KEEP)
-				log.Debug("🤖 cannot play the drawn card, keep it")
+				log.Debug(botFace + "cannot play the drawn card, keep it")
 			}
 		}
 	} else {
@@ -259,7 +272,7 @@ func ai(t *Table, bot *Client) {
 	}
 
 	if cardToPlay != 0 {
-		log.Debug("🤖 finish AI with solution", zap.String("card", uno.CardToString(cardToPlay)))
+		log.Debug(botFace+"finish AI with solution", zap.String("card", uno.CardToString(cardToPlay)))
 		if len(state.Cards) == 2 {
 			action.Action = int32(pb.Action_ACTION_UNO_PLAY)
 		} else {
@@ -267,7 +280,8 @@ func ai(t *Table, bot *Client) {
 		}
 		action.Card = append(action.Card, cardToPlay)
 	} else {
-		log.Debug("🤖 finish AI with no card", zap.String("action", action.String()))
+		actionEnum := pb.Action(action.Action)
+		log.Debug(botFace+"finish AI with no card", zap.String("action", actionEnum.String()))
 	}
 
 	body, err := proto.Marshal(action)

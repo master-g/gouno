@@ -3,6 +3,7 @@ export const enum Card {
     COLOR_YELLOW = 0x10,
     COLOR_BLUE = 0x20,
     COLOR_GREEN = 0x30,
+    COLOR_WILD = 0x40,
     VALUE_0 = 0x01,
     VALUE_1 = 0x02,
     VALUE_2 = 0x03,
@@ -32,3 +33,22 @@ export const CardSet:number[] = [
 		0x4E, 0x4E, 0x4E, 0x4E, // wild
 		0x4F, 0x4F, 0x4F, 0x4F, // wild draw 4
 ];
+
+class Uno {
+    private static _instance:Uno = null;
+    public static get Instance() {
+        return this._instance || (this._instance = new Uno());
+    }
+
+    private constructor() {
+    }
+
+    public getColor(card:number):number {
+        return card & 0xF0;
+    }
+    public getValue(card:number):number {
+        return card & 0x0F;
+    }
+}
+
+export const UNO = Uno.Instance;

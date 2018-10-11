@@ -94,6 +94,16 @@ export default class ProtoMessage {
         );
     }
 
+    public static C2SEnterGame(): Uint8Array {
+        return this.C2SHeader(
+            proto.game.GameCmd.ENTER_GAME_REQ,
+            this.seq,
+            this.uid,
+            this._clientInfo,
+            null
+        );
+    }
+
     public static S2CHeader(buf: Uint8Array): proto.common.S2CHeader {
         try {
             let d = proto.common.S2CHeader.decode(buf);
@@ -122,8 +132,11 @@ export default class ProtoMessage {
                     return proto.game.S2CPlayerLeftNty.decode(body);
                 case proto.game.GameCmd.EVENT_NTY:
                     return proto.game.S2CEventNty.decode(body);
+                case proto.common.Cmd.HEART_BEAT_RESP:
+                case proto.common.Cmd.KICK_NOTIFY:
+                    return null;
                 default:
-                    L.d("unable to map cmd", cmd);
+                    L.d("unable to map cmd", cmd, `0x${cmd.toString(16)}`);
                     return null;
             }
         } catch (e) {

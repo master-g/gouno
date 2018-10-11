@@ -109,28 +109,28 @@ func Route(s *sessions.Session, pkg []byte) (resp []byte) {
 			status = int32(pb.StatusCode_STATUS_UNKNOWN_CMD)
 			err = ErrorHandlerNotFound
 		}
-	}
 
-	// make response and check for errors
-	if status != int32(pb.StatusCode_STATUS_OK) && h != nil {
-		if status == int32(pb.StatusCode_STATUS_INTERNAL_ERROR) {
-			log.Warn("error while handling cmd", zap.String("cmd", h.ReqCmd.String()), zap.Error(err))
+		// make response and check for errors
+		if status != int32(pb.StatusCode_STATUS_OK) && h != nil {
+			if status == int32(pb.StatusCode_STATUS_INTERNAL_ERROR) {
+				log.Warn("error while handling cmd", zap.String("cmd", h.ReqCmd.String()), zap.Error(err))
+			} else {
+				log.Info("unable to handle cmd", zap.String("cmd", h.ReqCmd.String()), zap.Error(err))
+			}
+			msg := ""
+			if err != nil {
+				msg = err.Error()
+			}
+			resp = s.ErrorResponse(int32(h.RespCmd), status, msg)
+		} else if status != int32(pb.StatusCode_STATUS_OK) && h == nil {
+			msg := ""
+			if err != nil {
+				msg = err.Error()
+			}
+			resp = s.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), status, msg)
 		} else {
-			log.Info("unable to handle cmd", zap.String("cmd", h.ReqCmd.String()), zap.Error(err))
+			resp = s.Response(int32(h.RespCmd), result)
 		}
-		msg := ""
-		if err != nil {
-			msg = err.Error()
-		}
-		resp = s.ErrorResponse(int32(h.RespCmd), status, msg)
-	} else if status != int32(pb.StatusCode_STATUS_OK) && h == nil {
-		msg := ""
-		if err != nil {
-			msg = err.Error()
-		}
-		resp = s.ErrorResponse(int32(pb.Cmd_KICK_NOTIFY), status, msg)
-	} else {
-		resp = s.Response(int32(h.RespCmd), result)
 	}
 
 	// profiling

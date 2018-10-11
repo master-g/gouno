@@ -98,6 +98,7 @@ func registerClient(req *RegisterRequest) {
 			} else {
 				// FIXME: previous table not found, error, need fix if this happens
 				log.Error("client with dangling table", zap.String("client", prevClient.String()))
+				req.ClientEntry <- nil
 			}
 		} else {
 			log.Error("unable to convert *client")

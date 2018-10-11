@@ -515,13 +515,17 @@ func (t *Table) tick() {
 				return
 			}
 			if playerState.Timeout {
-				log.Info("AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
 				ai(t, t.clientMap[t.CurrentPlayer])
 			} else {
 				log.Info("player timeout, prepare AI assistants", zap.Uint64("uid", t.CurrentPlayer))
 				// player timeout, set random interval before AI kicks in
 				playerState.Timeout = true
-				t.TimeLeft = tableConfig.AIAssistantMinTimeout + rand.Intn(tableConfig.AIAssistantMaxTimeout-tableConfig.AIAssistantMinTimeout)
+				delta := tableConfig.AIAssistantMaxTimeout - tableConfig.AIAssistantMinTimeout
+				if delta > 0 {
+					t.TimeLeft = tableConfig.AIAssistantMinTimeout + rand.Intn(delta)
+				} else {
+					t.TimeLeft = tableConfig.AIAssistantMinTimeout
+				}
 			}
 		}
 	}

@@ -260,6 +260,8 @@ func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	body.Card = make([]uint8, 1)
 	body.Card[0] = card[0]
 
+	state.Cards = append(state.Cards, card[0])
+
 	// reset timeout
 	state.Timeout = false
 	t.TimeLeft = t.Timeout

@@ -174,6 +174,7 @@ func NewDeck() *Deck {
 
 // Reset deck to initial state
 func (d *Deck) Reset() {
+	d.cards = make([]uint8, len(cardPreset))
 	copy(d.cards, cardPreset)
 }
 

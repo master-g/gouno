@@ -60,7 +60,6 @@ func agent(wg *sync.WaitGroup, s *sessions.Session, in chan []byte, out *Sender)
 		close(s.Push)
 
 		wg.Done()
-		log.Info("wait group dec")
 	}()
 
 	// **** MAIN MESSAGE LOOP ****

@@ -29,7 +29,7 @@ prepare-timeout = 3
 ai-assistant-min-timeout = 1
 
 # ai assistant max timeout
-ai-assistant-max-timeout = 6
+ai-assistant-max-timeout = 1
 
 # minimum players to start the game
 min-players = 2

@@ -21,6 +21,9 @@
 package game
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/uno"
@@ -115,4 +118,33 @@ func (p PlayerState) CalculateScore() int32 {
 func (p *PlayerState) ResetForNewGame() {
 	p.Flag = 0
 	p.Score = 0
+}
+
+func (p PlayerState) String() string {
+	sb := &strings.Builder{}
+	sb.WriteString("uid:")
+	sb.WriteString(strconv.FormatUint(p.UID, 10))
+	sb.WriteString(" state:")
+	states := make([]string, 0, 3)
+	if p.IsFlagSet(int32(pb.PlayerStatus_STATUS_UNO)) {
+		states = append(states, "UNO")
+	}
+	if p.IsFlagSet(int32(pb.PlayerStatus_STATUS_DRAW)) {
+		states = append(states, "DRAW")
+	}
+	if p.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
+		states = append(states, "CHALLENGE")
+	}
+	sb.WriteString(strings.Join(states, "|"))
+
+	sb.WriteString(" cards:")
+	cards := make([]string, 0, len(p.Cards))
+
+	for _, c := range p.Cards {
+		cards = append(cards, uno.CardToString(c))
+	}
+
+	sb.WriteString(strings.Join(cards, ", "))
+
+	return sb.String()
 }

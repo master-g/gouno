@@ -2,6 +2,7 @@ import ProtoMessage from "../proto/ProtoMessage";
 import NETWORKMGR from "../base/network/NetworkManager";
 import L from "../base/log/Log";
 import Listener from "../base/network/Listener";
+import { proto } from "../proto/pb";
 
 class Network {
     private static _instance: Network;
@@ -104,6 +105,12 @@ class Network {
         NETWORKMGR.conn(addr);
     }
 
+    public sendEnterGame(target:Object, func:Function):void {
+        this.registerOnNotify(proto.game.GameCmd.ENTER_GAME_RESP, target, func, true);
+        const enterReq = ProtoMessage.C2SEnterGame();
+        NETWORKMGR.send(enterReq);
+    }
+
     private auth(): void {
         const authReq = ProtoMessage.C2SHandshake("" + this.uid());
         NETWORKMGR.send(authReq);
@@ -143,6 +150,11 @@ class Network {
             if (listener.userdata == true) {
                 object.splice(index, 1);
             }
+        });
+
+        this.unregisterOnNotify(this, proto.common.Cmd.HEART_BEAT_RESP);
+        this.registerOnNotify(proto.common.Cmd.HEART_BEAT_RESP, this, ()=> {
+            L.d(Network.LOG_TAG + " HEARTBEAT");
         });
     }
 

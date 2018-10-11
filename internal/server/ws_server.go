@@ -109,7 +109,6 @@ func handleWSConnection(conn *websocket.Conn) {
 
 	// start agent for packet processing
 	wg.Add(1)
-	log.Info("wait group inc")
 	go agent(wg, sess, in, out)
 
 	// close connection immediately

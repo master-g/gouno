@@ -23,6 +23,8 @@ package api
 import (
 	"errors"
 
+	"github.com/master-g/gouno/pkg/lntime"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/master-g/gouno/api/pb"
 	"github.com/master-g/gouno/internal/game"
@@ -30,7 +32,6 @@ import (
 	"github.com/master-g/gouno/internal/router"
 	"github.com/master-g/gouno/internal/sessions"
 	"github.com/master-g/gouno/pkg/crypto"
-	"github.com/master-g/gouno/pkg/lntime"
 	"go.uber.org/zap"
 )
 
@@ -73,6 +74,26 @@ var handshakeHandler = &router.Handler{
 			}
 		}
 
+		// register client to game server
+		registerReq := &game.RegisterRequest{
+			UID:         header.Uid,
+			ClientEntry: make(chan *game.Client),
+		}
+
+		// send register request to game server
+		game.Register <- registerReq
+
+		// wait for game client
+		// TODO: this might block if client.tid is not set by table.registerClient
+		s.Client = <-registerReq.ClientEntry
+
+		if s.Client == nil {
+			s.SetFlagKicked()
+			status = int32(pb.StatusCode_STATUS_INTERNAL_ERROR)
+			err = errors.New("nil client returned from game server")
+			return
+		}
+
 		// update session
 		s.UID = header.Uid
 		s.Token = newToken
@@ -90,19 +111,6 @@ var handshakeHandler = &router.Handler{
 			return
 		}
 		status = int32(pb.StatusCode_STATUS_OK)
-
-		// register client to game server
-		registerReq := &game.RegisterRequest{
-			UID:         header.Uid,
-			ClientEntry: make(chan *game.Client),
-		}
-
-		// send register request to game server
-		game.Register <- registerReq
-
-		// wait for game client
-		// TODO: this might block if client.tid is not set by table.registerClient
-		s.Client = <-registerReq.ClientEntry
 
 		log.Debug("start fetch loop for session", zap.String("sess", s.String()))
 
