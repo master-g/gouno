@@ -207,6 +207,10 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 		result.Events = append(result.Events, &pb.SingleEvent{
 			Event: int32(pb.Event_EVENT_REVERSE),
 		})
+		if len(t.States) == 2 {
+			// when there are only two players, reverse has effect as skip
+			skip = true
+		}
 	case uno.ValueDraw2:
 		drawCount = uno.CardCount2
 		skip = true
