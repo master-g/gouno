@@ -52,6 +52,12 @@ type Client struct {
 	flag Flag
 }
 
+func (c *Client) SendOut(frame pb.Frame) {
+	if !c.IsFlagOfflineSet() && c.Out != nil {
+		c.Out <- frame
+	}
+}
+
 // String interface
 func (c *Client) String() string {
 	return fmt.Sprintf("uid: %v, tid: %v, flag: %v", c.UID, c.TID, c.flag)

@@ -70,6 +70,10 @@ type Table struct {
 	Stage int
 	// Clockwise indicates the current order is clockwise, otherwise CCW
 	Clockwise bool
+	// Current color
+	Color uint8
+	// ChallengeColor for challenge
+	ChallengeColor uint8
 	// LastPlayer UID of last player
 	LastPlayer uint64
 	// CurrentPlayer UID of current player
@@ -158,16 +162,18 @@ func (t *Table) String() string {
 // DumpState dumps table status and returns in TableState
 func (t Table) DumpState() *pb.TableState {
 	state := &pb.TableState{
-		Tid:           t.TID,
-		Status:        pb.TableStatus(t.Stage),
-		Timeout:       int32(t.Timeout),
-		TimeLeft:      int32(t.TimeLeft),
-		Clockwise:     t.Clockwise,
-		LastPlayer:    t.LastPlayer,
-		CurrentPlayer: t.CurrentPlayer,
-		CardsLeft:     int32(t.Deck.CardsRemaining()),
-		DiscardPile:   t.Discard,
-		Players:       make([]*pb.UnoPlayer, len(t.States)),
+		Tid:            t.TID,
+		Status:         pb.TableStatus(t.Stage),
+		Timeout:        int32(t.Timeout),
+		TimeLeft:       int32(t.TimeLeft),
+		Clockwise:      t.Clockwise,
+		Color:          int32(t.Color),
+		ChallengeColor: int32(t.ChallengeColor),
+		LastPlayer:     t.LastPlayer,
+		CurrentPlayer:  t.CurrentPlayer,
+		CardsLeft:      int32(t.Deck.CardsRemaining()),
+		DiscardPile:    t.Discard,
+		Players:        make([]*pb.UnoPlayer, len(t.States)),
 	}
 	for i, playerState := range t.States {
 		state.Players[i] = playerState.Dump()
@@ -181,7 +187,7 @@ func (t *Table) registerClient(req *RegisterRequest) {
 		UID: req.UID,
 		TID: t.TID,
 		In:  make(chan pb.Frame),
-		Out: make(chan pb.Frame),
+		Out: make(chan pb.Frame, 128),
 		Die: make(chan struct{}),
 	}
 	clients.Store(req.UID, client)
@@ -253,33 +259,31 @@ func (t *Table) broadcast(cmd pb.GameCmd, msg proto.Message) {
 	}
 
 	for _, c := range t.Clients {
-		// TODO: is this offline flag really necessary in here ?
-		if !c.IsFlagOfflineSet() {
-			select {
-			case c.Out <- *frame:
-			default:
-				// TODO: is this default necessary ?
-				// same reason as router
-			}
-		}
+		c.SendOut(*frame)
 	}
 	log.Debug("broadcast")
 }
 
 func (t *Table) notifyEvent(event *pb.S2CEventNty) {
 	for _, c := range t.Clients {
-		eventCpy := proto.Clone(event).(*pb.S2CEventNty)
-		for i, singleEvent := range eventCpy.Events {
-			if singleEvent.Uid == 0 || len(singleEvent.Card) == 0 {
-				continue
+		eventCpy := &pb.S2CEventNty{
+			Events: make([]*pb.SingleEvent, len(event.Events)),
+		}
+		for i, singleEvent := range event.Events {
+			eventCpy.Events[i] = &pb.SingleEvent{
+				Uid:       singleEvent.Uid,
+				Event:     singleEvent.Event,
+				Card:      make([]uint8, len(singleEvent.Card)),
+				Color:     singleEvent.Color,
+				Clockwise: singleEvent.Clockwise,
 			}
-			if c.UID != singleEvent.Uid {
-				// hide card info from other player
-				event.Events[i] = &pb.SingleEvent{
-					Uid:   singleEvent.Uid,
-					Event: singleEvent.Event,
-					Card:  make([]uint8, len(singleEvent.Card)),
-				}
+			if c.UID != singleEvent.Uid &&
+				len(singleEvent.Card) > 0 &&
+				singleEvent.Event != int32(pb.Event_EVENT_PLAY) &&
+				singleEvent.Event != int32(pb.Event_EVENT_UNO_PLAY) {
+				// hide card info from other player if event is not play event
+			} else {
+				copy(eventCpy.Events[i].Card, singleEvent.Card)
 			}
 		}
 
@@ -297,10 +301,7 @@ func (t *Table) notifyEvent(event *pb.S2CEventNty) {
 		}
 
 		if !c.IsFlagOfflineSet() {
-			select {
-			case c.Out <- *frame:
-			default:
-			}
+			c.SendOut(*frame)
 		}
 	}
 }
@@ -325,12 +326,7 @@ func (t *Table) notifyGameStart() {
 			Body:   data,
 		}
 
-		if !c.IsFlagOfflineSet() {
-			select {
-			case c.Out <- *frame:
-			default:
-			}
-		}
+		c.SendOut(*frame)
 	}
 }
 
@@ -405,10 +401,14 @@ func (t *Table) nextStartPlayer() uint64 {
 	return 0
 }
 
-func (t *Table) nextPlayer() uint64 {
+func (t *Table) nextPlayer() (uid uint64) {
+	defer func() {
+		log.Debug("nextPlayer", zap.Uint64("uid", uid))
+	}()
+
 	if t.CurrentPlayer == 0 && t.startPlayer == 0 {
 		log.Error("need to select start player first")
-		return 0
+		return
 	}
 
 	for i, c := range t.Clients {
@@ -421,11 +421,12 @@ func (t *Table) nextPlayer() uint64 {
 					i = len(t.Clients) - 1
 				}
 			}
-			return t.Clients[i].UID
+			uid = t.Clients[i].UID
+			break
 		}
 	}
 
-	return 0
+	return
 }
 
 // new game, new round
@@ -437,6 +438,7 @@ func (t *Table) newGame() {
 	t.DeckRecycled = false
 	// deal cards to each player, and deal first card
 	t.dealInitialCards()
+	t.Color = uno.CardColor(t.Discard[0])
 	// if first card is skip or reverse
 	value := uno.CardValue(t.Discard[0])
 	if value == uno.ValueSkip {

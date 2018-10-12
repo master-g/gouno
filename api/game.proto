@@ -49,14 +49,16 @@ enum ActionResult {
     ACTION_RESULT_NOT_TURN       = 2;
     ACTION_RESULT_CARD_NOT_EXIST = 3;
     ACTION_RESULT_NOT_DRAW_CARD  = 4;
-    ACTION_RESULT_INVALID        = 5;
+    ACTION_RESULT_NEED_COLOR     = 5;
+    ACTION_RESULT_INVALID        = 6;
 }
 
 enum CardColor {
-    COLOR_RED    = 0x00; // red
-    COLOR_YELLOW = 0x10; // yellow
-    COLOR_BLUE   = 0x20; // blue
-    COLOR_GREEN  = 0x30; // green
+    COLOR_WILD   = 0x00; // wild
+    COLOR_RED    = 0x10; // red
+    COLOR_YELLOW = 0x20; // yellow
+    COLOR_BLUE   = 0x30; // blue
+    COLOR_GREEN  = 0x40; // green
 }
 
 enum PlayerStatus {
@@ -81,16 +83,18 @@ enum TableStatus {
 }
 
 message TableState {
-    fixed64     tid            = 1;  // table id
-    TableStatus status         = 2;  // table status
-    int32       timeout        = 3;  // timeout of the stage
-    int32       time_left      = 4;  // time left in seconds
-    bool        clockwise      = 5;  // current direction
-    fixed64     last_player    = 7;  // last player
-    fixed64     current_player = 8;  // current player
-    int32       cards_left     = 9;  // cards left in deck, can be calculated
-    bytes       discard_pile   = 10; // discard pile for played cards
-    repeated UnoPlayer players = 11; // player list
+    fixed64     tid             = 1;  // table id
+    TableStatus status          = 2;  // table status
+    int32       timeout         = 3;  // timeout of the stage
+    int32       time_left       = 4;  // time left in seconds
+    bool        clockwise       = 5;  // current direction
+    int32       color           = 6;  // current color
+    int32       challenge_color = 7;  // keep track of color for challenge
+    fixed64     last_player     = 8;  // last player
+    fixed64     current_player  = 9;  // current player
+    int32       cards_left      = 10; // cards left in deck, can be calculated
+    bytes       discard_pile    = 11; // discard pile for played cards
+    repeated UnoPlayer players  = 12; // player list
 }
 
 message S2CPlayerJoinNty {
@@ -104,6 +108,7 @@ message S2CPlayerLeftNty {
 message C2SActionReq {
     int32 action = 1; // action, see Action enum
     bytes card   = 2; // card played
+    int32 color  = 3; // EXPLICIT specify color if wild/wild+4
 }
 
 message S2CActionResp {
@@ -112,9 +117,11 @@ message S2CActionResp {
 }
 
 message SingleEvent {
-    fixed64 uid   = 1; // player uid
-    int32   event = 2; // action/event
-    bytes   card  = 3; // cards involved
+    fixed64 uid       = 1; // player uid
+    int32   event     = 2; // event
+    bytes   card      = 3; // cards involved
+    bool    clockwise = 4; // current direction, available only on EVENT_PLAY
+    int32   color     = 5; // current color, available only on EVENT_PLAY
 }
 
 message S2CEventNty {

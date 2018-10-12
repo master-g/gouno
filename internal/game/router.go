@@ -88,11 +88,7 @@ func route(c *Client, t *Table, frame pb.Frame) {
 			Body:    result.Body,
 		}
 
-		select {
-		case c.Out <- resp:
-		default:
-			// TODO: is this default necessary ?
-		}
+		c.SendOut(resp)
 
 		if len(result.Events) > 0 {
 			t.notifyEvent(&pb.S2CEventNty{
@@ -112,6 +108,6 @@ func route(c *Client, t *Table, frame pb.Frame) {
 			Status:  int32(pb.StatusCode_STATUS_UNKNOWN_CMD),
 			Message: "unknown cmd",
 		}
-		c.Out <- resp
+		c.SendOut(resp)
 	}
 }

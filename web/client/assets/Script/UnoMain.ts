@@ -1,12 +1,14 @@
+// FIXME: there might be some issues with reverse card
+
 const { ccclass, property } = cc._decorator;
 
 import L from "./base/log/Log";
 import UnoCard from "./component/UnoCard";
-import { CardSet, Card } from "./uno/Uno";
 import NIO from "./network/Network";
 import { proto } from "./proto/pb";
 import Circle from "./component/Circle";
 import ProtoMessage from "./proto/ProtoMessage";
+import { UNO, Card } from "./uno/Uno";
 
 @ccclass
 export default class UnoMain extends cc.Component {
@@ -18,6 +20,12 @@ export default class UnoMain extends cc.Component {
 
     @property(Circle)
     private circleComponent: Circle = null;
+
+    private cardZOrder: number = 0;
+    private allOfTheCards: UnoCard[] = [];
+
+    // TODO: move selfCards to a component
+    private selfCards: UnoCard[] = [];
 
     heartbeatHandler: number = -1;
 
@@ -54,6 +62,8 @@ export default class UnoMain extends cc.Component {
                         });
                     }
                     this.setPlayers(resp.players);
+                    this.circleComponent.setClockwise(resp.clockwise);
+                    this.circleComponent.setColor(resp.color);
                 });
             }
         );
@@ -63,10 +73,13 @@ export default class UnoMain extends cc.Component {
             this,
             (header, body) => {
                 L.d("GAME_START_NTY", body);
+                this.clearAllTheCards();
                 body.discardPile.forEach(c => {
-                    this.dealCard(c);
+                    this.dealCard(c, true);
                 });
                 this.setPlayers(body.players);
+                this.circleComponent.setClockwise(body.clockwise);
+                this.circleComponent.setColor(body.color);
             }
         );
 
@@ -78,18 +91,39 @@ export default class UnoMain extends cc.Component {
             proto.game.GameCmd.EVENT_NTY,
             this,
             (header, body) => {
-                L.d("nty", body);
-                body.events.forEach(singleEvent => {
+                if (!body || !body.events || body.events.length == 0) {
+                    return;
+                }
+                for (let i = 0; i < body.events.length; i++) {
+                    const event = body.events[i];
+
+                    L.d(event);
+                    const what = event.event;
+                    const isSelf = event.uid == ProtoMessage.uid;
                     if (
-                        singleEvent.event == proto.game.Event.EVENT_PLAY ||
-                        singleEvent.event == proto.game.Event.EVENT_UNO_PLAY
+                        what == proto.game.Event.EVENT_PLAY ||
+                        what == proto.game.Event.EVENT_UNO_PLAY
                     ) {
-                        if (singleEvent.card) {
-                            const card = singleEvent.card[0];
+                        if (!event.card || event.card.length == 0) {
+                            continue;
+                        }
+
+                        this.circleComponent.setColor(event.color);
+                        this.circleComponent.setClockwise(event.clockwise);
+
+                        const card = event.card[0];
+                        if (!isSelf) {
                             this.dealCard(card);
+                            // move card from other player
+                        } else {
+                            this.playSelfCard(card);
+                        }
+                    } else if (what == proto.game.Event.EVENT_DRAW) {
+                        if (isSelf) {
+                            this.selfDrawCards(event.card);
                         }
                     }
-                });
+                }
             }
         );
 
@@ -107,13 +141,8 @@ export default class UnoMain extends cc.Component {
 
         // const v = CardSet[Math.floor(cc.random0To1() * CardSet.length)];
 
-        const c: UnoCard = cc
-            .instantiate(this.prefabCard)
-            .getComponent(UnoCard);
-        c.SetCard(v);
-        c.node.setPosition(-318, 439);
+        const c = this.addCardToPos(v, -320, 420);
         c.node.rotation = startRot;
-        this.node.addChild(c.node);
 
         if (instant) {
             c.node.setPosition(x, y);
@@ -121,8 +150,6 @@ export default class UnoMain extends cc.Component {
             c.node.runAction(cc.rotateBy(duration, rot));
             c.node.runAction(cc.moveTo(duration, cc.v2(x, y)));
         }
-
-        this.circleComponent.setCard(v);
     }
 
     addCardToPos(card, x, y: number): UnoCard {
@@ -133,7 +160,29 @@ export default class UnoMain extends cc.Component {
         c.node.setPosition(x, y);
         this.node.addChild(c.node);
 
+        c.node.zIndex = this.cardZOrder;
+        this.cardZOrder++;
+        this.allOfTheCards.push(c);
+
         return c;
+    }
+
+    clearAllTheCards(): void {
+        this.cardZOrder = 0;
+        for (let i = this.allOfTheCards.length - 1; i >= 0; i--) {
+            const c = this.allOfTheCards[i];
+            c.node.removeFromParent();
+        }
+        this.allOfTheCards = [];
+        this.selfCards = [];
+    }
+
+    clearSelfCards(): void {
+        this.selfCards.forEach(c => {
+            c.node.removeFromParent();
+            this.allOfTheCards.splice(this.allOfTheCards.indexOf(c), 1);
+        });
+        this.selfCards = [];
     }
 
     setSelfCards(cards: number[]): void {
@@ -141,19 +190,85 @@ export default class UnoMain extends cc.Component {
             return;
         }
 
-        const d = 60;
-        let startX = 0;
-        if (cards.length % 2 == 1) {
-            startX = Math.floor(cards.length / 2) * -d;
-        } else {
-            startX = -(cards.length - 1) * d / 2;
-        }
-
-        L.d("start position", startX);
+        // remove previous cards
+        this.clearSelfCards();
 
         for (let i = 0; i < cards.length; i++) {
             const c = cards[i];
-            this.addCardToPos(c, startX + d * i, -380);
+            const card = this.addCardToPos(c, 0, 0);
+            this.selfCards.push(card);
+        }
+
+        this.repositionSelfCards();
+    }
+
+    selfDrawCards(cards: number[]): void {
+        for (let i = 0; i < cards.length; i++) {
+            const c = this.addCardToPos(cards[i], -320, 420);
+            this.selfCards.push(c);
+        }
+        this.repositionSelfCards();
+    }
+
+    playSelfCard(card: number): void {
+        let found = false;
+
+        for (let i = this.selfCards.length - 1; i >= 0; i--) {
+            const unoCard = this.selfCards[i];
+            const value = UNO.getValue(card);
+            if (
+                unoCard.value == Card.VALUE_WILD ||
+                unoCard.value == Card.VALUE_WILD_DRAW_4
+            ) {
+                if (value == unoCard.value) {
+                    found = true;
+                }
+            } else if (card == unoCard.card) {
+                found = true;
+            }
+
+            if (!found) {
+                continue;
+            }
+
+            unoCard.node.zIndex = this.cardZOrder;
+            this.cardZOrder++;
+
+            unoCard.node.stopAllActions();
+            const x = cc.randomMinus1To1() * 40;
+            const y = cc.randomMinus1To1() * 40;
+            const rot = cc.randomMinus1To1() * 180;
+            const duration = 0.6;
+            unoCard.node.runAction(cc.rotateBy(duration, rot));
+            unoCard.node.runAction(cc.moveTo(duration, cc.v2(x, y)));
+            this.selfCards.splice(i, 1);
+            break;
+        }
+
+        if (found) {
+            this.repositionSelfCards();
+        }
+    }
+
+    repositionSelfCards(): void {
+        if (this.selfCards.length == 0) {
+            return;
+        }
+
+        const d = 60;
+        let startX = 0;
+        const cardCount = this.selfCards.length;
+
+        if (cardCount % 2 == 1) {
+            startX = Math.floor(cardCount / 2) * -d;
+        } else {
+            startX = (-(cardCount - 1) * d) / 2;
+        }
+
+        for (let i = 0; i < cardCount; i++) {
+            const card = this.selfCards[i];
+            card.node.stopAllActions();
+            card.node.runAction(cc.moveTo(0.6, startX + d * i, -380));
         }
     }
 

@@ -1915,7 +1915,8 @@ $root.proto = (function() {
          * @property {number} ACTION_RESULT_NOT_TURN=2 ACTION_RESULT_NOT_TURN value
          * @property {number} ACTION_RESULT_CARD_NOT_EXIST=3 ACTION_RESULT_CARD_NOT_EXIST value
          * @property {number} ACTION_RESULT_NOT_DRAW_CARD=4 ACTION_RESULT_NOT_DRAW_CARD value
-         * @property {number} ACTION_RESULT_INVALID=5 ACTION_RESULT_INVALID value
+         * @property {number} ACTION_RESULT_NEED_COLOR=5 ACTION_RESULT_NEED_COLOR value
+         * @property {number} ACTION_RESULT_INVALID=6 ACTION_RESULT_INVALID value
          */
         game.ActionResult = (function() {
             var valuesById = {}, values = Object.create(valuesById);
@@ -1924,7 +1925,8 @@ $root.proto = (function() {
             values[valuesById[2] = "ACTION_RESULT_NOT_TURN"] = 2;
             values[valuesById[3] = "ACTION_RESULT_CARD_NOT_EXIST"] = 3;
             values[valuesById[4] = "ACTION_RESULT_NOT_DRAW_CARD"] = 4;
-            values[valuesById[5] = "ACTION_RESULT_INVALID"] = 5;
+            values[valuesById[5] = "ACTION_RESULT_NEED_COLOR"] = 5;
+            values[valuesById[6] = "ACTION_RESULT_INVALID"] = 6;
             return values;
         })();
 
@@ -1932,17 +1934,19 @@ $root.proto = (function() {
          * CardColor enum.
          * @name proto.game.CardColor
          * @enum {string}
-         * @property {number} COLOR_RED=0 COLOR_RED value
-         * @property {number} COLOR_YELLOW=16 COLOR_YELLOW value
-         * @property {number} COLOR_BLUE=32 COLOR_BLUE value
-         * @property {number} COLOR_GREEN=48 COLOR_GREEN value
+         * @property {number} COLOR_WILD=0 COLOR_WILD value
+         * @property {number} COLOR_RED=16 COLOR_RED value
+         * @property {number} COLOR_YELLOW=32 COLOR_YELLOW value
+         * @property {number} COLOR_BLUE=48 COLOR_BLUE value
+         * @property {number} COLOR_GREEN=64 COLOR_GREEN value
          */
         game.CardColor = (function() {
             var valuesById = {}, values = Object.create(valuesById);
-            values[valuesById[0] = "COLOR_RED"] = 0;
-            values[valuesById[16] = "COLOR_YELLOW"] = 16;
-            values[valuesById[32] = "COLOR_BLUE"] = 32;
-            values[valuesById[48] = "COLOR_GREEN"] = 48;
+            values[valuesById[0] = "COLOR_WILD"] = 0;
+            values[valuesById[16] = "COLOR_RED"] = 16;
+            values[valuesById[32] = "COLOR_YELLOW"] = 32;
+            values[valuesById[48] = "COLOR_BLUE"] = 48;
+            values[valuesById[64] = "COLOR_GREEN"] = 64;
             return values;
         })();
 
@@ -2270,6 +2274,8 @@ $root.proto = (function() {
              * @property {number|null} [timeout] TableState timeout
              * @property {number|null} [timeLeft] TableState timeLeft
              * @property {boolean|null} [clockwise] TableState clockwise
+             * @property {number|null} [color] TableState color
+             * @property {number|null} [challengeColor] TableState challengeColor
              * @property {number|Long|null} [lastPlayer] TableState lastPlayer
              * @property {number|Long|null} [currentPlayer] TableState currentPlayer
              * @property {number|null} [cardsLeft] TableState cardsLeft
@@ -2332,6 +2338,22 @@ $root.proto = (function() {
              * @instance
              */
             TableState.prototype.clockwise = false;
+
+            /**
+             * TableState color.
+             * @member {number} color
+             * @memberof proto.game.TableState
+             * @instance
+             */
+            TableState.prototype.color = 0;
+
+            /**
+             * TableState challengeColor.
+             * @member {number} challengeColor
+             * @memberof proto.game.TableState
+             * @instance
+             */
+            TableState.prototype.challengeColor = 0;
 
             /**
              * TableState lastPlayer.
@@ -2407,17 +2429,21 @@ $root.proto = (function() {
                     writer.uint32(/* id 4, wireType 0 =*/32).int32(message.timeLeft);
                 if (message.clockwise != null && message.hasOwnProperty("clockwise"))
                     writer.uint32(/* id 5, wireType 0 =*/40).bool(message.clockwise);
+                if (message.color != null && message.hasOwnProperty("color"))
+                    writer.uint32(/* id 6, wireType 0 =*/48).int32(message.color);
+                if (message.challengeColor != null && message.hasOwnProperty("challengeColor"))
+                    writer.uint32(/* id 7, wireType 0 =*/56).int32(message.challengeColor);
                 if (message.lastPlayer != null && message.hasOwnProperty("lastPlayer"))
-                    writer.uint32(/* id 7, wireType 1 =*/57).fixed64(message.lastPlayer);
+                    writer.uint32(/* id 8, wireType 1 =*/65).fixed64(message.lastPlayer);
                 if (message.currentPlayer != null && message.hasOwnProperty("currentPlayer"))
-                    writer.uint32(/* id 8, wireType 1 =*/65).fixed64(message.currentPlayer);
+                    writer.uint32(/* id 9, wireType 1 =*/73).fixed64(message.currentPlayer);
                 if (message.cardsLeft != null && message.hasOwnProperty("cardsLeft"))
-                    writer.uint32(/* id 9, wireType 0 =*/72).int32(message.cardsLeft);
+                    writer.uint32(/* id 10, wireType 0 =*/80).int32(message.cardsLeft);
                 if (message.discardPile != null && message.hasOwnProperty("discardPile"))
-                    writer.uint32(/* id 10, wireType 2 =*/82).bytes(message.discardPile);
+                    writer.uint32(/* id 11, wireType 2 =*/90).bytes(message.discardPile);
                 if (message.players != null && message.players.length)
                     for (var i = 0; i < message.players.length; ++i)
-                        $root.proto.game.UnoPlayer.encode(message.players[i], writer.uint32(/* id 11, wireType 2 =*/90).fork()).ldelim();
+                        $root.proto.game.UnoPlayer.encode(message.players[i], writer.uint32(/* id 12, wireType 2 =*/98).fork()).ldelim();
                 return writer;
             };
 
@@ -2467,19 +2493,25 @@ $root.proto = (function() {
                     case 5:
                         message.clockwise = reader.bool();
                         break;
+                    case 6:
+                        message.color = reader.int32();
+                        break;
                     case 7:
-                        message.lastPlayer = reader.fixed64();
+                        message.challengeColor = reader.int32();
                         break;
                     case 8:
-                        message.currentPlayer = reader.fixed64();
+                        message.lastPlayer = reader.fixed64();
                         break;
                     case 9:
-                        message.cardsLeft = reader.int32();
+                        message.currentPlayer = reader.fixed64();
                         break;
                     case 10:
-                        message.discardPile = reader.bytes();
+                        message.cardsLeft = reader.int32();
                         break;
                     case 11:
+                        message.discardPile = reader.bytes();
+                        break;
+                    case 12:
                         if (!(message.players && message.players.length))
                             message.players = [];
                         message.players.push($root.proto.game.UnoPlayer.decode(reader, reader.uint32()));
@@ -2541,6 +2573,12 @@ $root.proto = (function() {
                 if (message.clockwise != null && message.hasOwnProperty("clockwise"))
                     if (typeof message.clockwise !== "boolean")
                         return "clockwise: boolean expected";
+                if (message.color != null && message.hasOwnProperty("color"))
+                    if (!$util.isInteger(message.color))
+                        return "color: integer expected";
+                if (message.challengeColor != null && message.hasOwnProperty("challengeColor"))
+                    if (!$util.isInteger(message.challengeColor))
+                        return "challengeColor: integer expected";
                 if (message.lastPlayer != null && message.hasOwnProperty("lastPlayer"))
                     if (!$util.isInteger(message.lastPlayer) && !(message.lastPlayer && $util.isInteger(message.lastPlayer.low) && $util.isInteger(message.lastPlayer.high)))
                         return "lastPlayer: integer|Long expected";
@@ -2610,6 +2648,10 @@ $root.proto = (function() {
                     message.timeLeft = object.timeLeft | 0;
                 if (object.clockwise != null)
                     message.clockwise = Boolean(object.clockwise);
+                if (object.color != null)
+                    message.color = object.color | 0;
+                if (object.challengeColor != null)
+                    message.challengeColor = object.challengeColor | 0;
                 if (object.lastPlayer != null)
                     if ($util.Long)
                         (message.lastPlayer = $util.Long.fromValue(object.lastPlayer)).unsigned = false;
@@ -2673,6 +2715,8 @@ $root.proto = (function() {
                     object.timeout = 0;
                     object.timeLeft = 0;
                     object.clockwise = false;
+                    object.color = 0;
+                    object.challengeColor = 0;
                     if ($util.Long) {
                         var long = new $util.Long(0, 0, false);
                         object.lastPlayer = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
@@ -2705,6 +2749,10 @@ $root.proto = (function() {
                     object.timeLeft = message.timeLeft;
                 if (message.clockwise != null && message.hasOwnProperty("clockwise"))
                     object.clockwise = message.clockwise;
+                if (message.color != null && message.hasOwnProperty("color"))
+                    object.color = message.color;
+                if (message.challengeColor != null && message.hasOwnProperty("challengeColor"))
+                    object.challengeColor = message.challengeColor;
                 if (message.lastPlayer != null && message.hasOwnProperty("lastPlayer"))
                     if (typeof message.lastPlayer === "number")
                         object.lastPlayer = options.longs === String ? String(message.lastPlayer) : message.lastPlayer;
@@ -3151,6 +3199,7 @@ $root.proto = (function() {
              * @interface IC2SActionReq
              * @property {number|null} [action] C2SActionReq action
              * @property {Uint8Array|null} [card] C2SActionReq card
+             * @property {number|null} [color] C2SActionReq color
              */
 
             /**
@@ -3185,6 +3234,14 @@ $root.proto = (function() {
             C2SActionReq.prototype.card = $util.newBuffer([]);
 
             /**
+             * C2SActionReq color.
+             * @member {number} color
+             * @memberof proto.game.C2SActionReq
+             * @instance
+             */
+            C2SActionReq.prototype.color = 0;
+
+            /**
              * Creates a new C2SActionReq instance using the specified properties.
              * @function create
              * @memberof proto.game.C2SActionReq
@@ -3212,6 +3269,8 @@ $root.proto = (function() {
                     writer.uint32(/* id 1, wireType 0 =*/8).int32(message.action);
                 if (message.card != null && message.hasOwnProperty("card"))
                     writer.uint32(/* id 2, wireType 2 =*/18).bytes(message.card);
+                if (message.color != null && message.hasOwnProperty("color"))
+                    writer.uint32(/* id 3, wireType 0 =*/24).int32(message.color);
                 return writer;
             };
 
@@ -3251,6 +3310,9 @@ $root.proto = (function() {
                         break;
                     case 2:
                         message.card = reader.bytes();
+                        break;
+                    case 3:
+                        message.color = reader.int32();
                         break;
                     default:
                         reader.skipType(tag & 7);
@@ -3293,6 +3355,9 @@ $root.proto = (function() {
                 if (message.card != null && message.hasOwnProperty("card"))
                     if (!(message.card && typeof message.card.length === "number" || $util.isString(message.card)))
                         return "card: buffer expected";
+                if (message.color != null && message.hasOwnProperty("color"))
+                    if (!$util.isInteger(message.color))
+                        return "color: integer expected";
                 return null;
             };
 
@@ -3315,6 +3380,8 @@ $root.proto = (function() {
                         $util.base64.decode(object.card, message.card = $util.newBuffer($util.base64.length(object.card)), 0);
                     else if (object.card.length)
                         message.card = object.card;
+                if (object.color != null)
+                    message.color = object.color | 0;
                 return message;
             };
 
@@ -3340,11 +3407,14 @@ $root.proto = (function() {
                         if (options.bytes !== Array)
                             object.card = $util.newBuffer(object.card);
                     }
+                    object.color = 0;
                 }
                 if (message.action != null && message.hasOwnProperty("action"))
                     object.action = message.action;
                 if (message.card != null && message.hasOwnProperty("card"))
                     object.card = options.bytes === String ? $util.base64.encode(message.card, 0, message.card.length) : options.bytes === Array ? Array.prototype.slice.call(message.card) : message.card;
+                if (message.color != null && message.hasOwnProperty("color"))
+                    object.color = message.color;
                 return object;
             };
 
@@ -3590,6 +3660,8 @@ $root.proto = (function() {
              * @property {number|Long|null} [uid] SingleEvent uid
              * @property {number|null} [event] SingleEvent event
              * @property {Uint8Array|null} [card] SingleEvent card
+             * @property {boolean|null} [clockwise] SingleEvent clockwise
+             * @property {number|null} [color] SingleEvent color
              */
 
             /**
@@ -3632,6 +3704,22 @@ $root.proto = (function() {
             SingleEvent.prototype.card = $util.newBuffer([]);
 
             /**
+             * SingleEvent clockwise.
+             * @member {boolean} clockwise
+             * @memberof proto.game.SingleEvent
+             * @instance
+             */
+            SingleEvent.prototype.clockwise = false;
+
+            /**
+             * SingleEvent color.
+             * @member {number} color
+             * @memberof proto.game.SingleEvent
+             * @instance
+             */
+            SingleEvent.prototype.color = 0;
+
+            /**
              * Creates a new SingleEvent instance using the specified properties.
              * @function create
              * @memberof proto.game.SingleEvent
@@ -3661,6 +3749,10 @@ $root.proto = (function() {
                     writer.uint32(/* id 2, wireType 0 =*/16).int32(message.event);
                 if (message.card != null && message.hasOwnProperty("card"))
                     writer.uint32(/* id 3, wireType 2 =*/26).bytes(message.card);
+                if (message.clockwise != null && message.hasOwnProperty("clockwise"))
+                    writer.uint32(/* id 4, wireType 0 =*/32).bool(message.clockwise);
+                if (message.color != null && message.hasOwnProperty("color"))
+                    writer.uint32(/* id 5, wireType 0 =*/40).int32(message.color);
                 return writer;
             };
 
@@ -3703,6 +3795,12 @@ $root.proto = (function() {
                         break;
                     case 3:
                         message.card = reader.bytes();
+                        break;
+                    case 4:
+                        message.clockwise = reader.bool();
+                        break;
+                    case 5:
+                        message.color = reader.int32();
                         break;
                     default:
                         reader.skipType(tag & 7);
@@ -3748,6 +3846,12 @@ $root.proto = (function() {
                 if (message.card != null && message.hasOwnProperty("card"))
                     if (!(message.card && typeof message.card.length === "number" || $util.isString(message.card)))
                         return "card: buffer expected";
+                if (message.clockwise != null && message.hasOwnProperty("clockwise"))
+                    if (typeof message.clockwise !== "boolean")
+                        return "clockwise: boolean expected";
+                if (message.color != null && message.hasOwnProperty("color"))
+                    if (!$util.isInteger(message.color))
+                        return "color: integer expected";
                 return null;
             };
 
@@ -3779,6 +3883,10 @@ $root.proto = (function() {
                         $util.base64.decode(object.card, message.card = $util.newBuffer($util.base64.length(object.card)), 0);
                     else if (object.card.length)
                         message.card = object.card;
+                if (object.clockwise != null)
+                    message.clockwise = Boolean(object.clockwise);
+                if (object.color != null)
+                    message.color = object.color | 0;
                 return message;
             };
 
@@ -3809,6 +3917,8 @@ $root.proto = (function() {
                         if (options.bytes !== Array)
                             object.card = $util.newBuffer(object.card);
                     }
+                    object.clockwise = false;
+                    object.color = 0;
                 }
                 if (message.uid != null && message.hasOwnProperty("uid"))
                     if (typeof message.uid === "number")
@@ -3819,6 +3929,10 @@ $root.proto = (function() {
                     object.event = message.event;
                 if (message.card != null && message.hasOwnProperty("card"))
                     object.card = options.bytes === String ? $util.base64.encode(message.card, 0, message.card.length) : options.bytes === Array ? Array.prototype.slice.call(message.card) : message.card;
+                if (message.clockwise != null && message.hasOwnProperty("clockwise"))
+                    object.clockwise = message.clockwise;
+                if (message.color != null && message.hasOwnProperty("color"))
+                    object.color = message.color;
                 return object;
             };
 

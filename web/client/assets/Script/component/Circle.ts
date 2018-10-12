@@ -20,15 +20,7 @@ export default class Circle extends cc.Component {
         this.setClockwise(true);
     }
 
-    public setCard(card:number):void {
-        this.setColor(UNO.getColor(card));
-        const value = UNO.getValue(card);
-        if (value == Card.VALUE_REVERSE) {
-            this.setClockwise(!this.clockwise);
-        }
-    }
-
-    private setColor(color: number): void {
+    public setColor(color: number): void {
         if (!this.circleSprite) {
             return;
         }
@@ -57,7 +49,7 @@ export default class Circle extends cc.Component {
         });
     }
 
-    private setClockwise(clockwise: boolean): void {
+    public setClockwise(clockwise: boolean): void {
         if (!this.circleSprite) {
             return;
         }

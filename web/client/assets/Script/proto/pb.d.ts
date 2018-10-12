@@ -767,15 +767,17 @@ export namespace proto {
             ACTION_RESULT_NOT_TURN = 2,
             ACTION_RESULT_CARD_NOT_EXIST = 3,
             ACTION_RESULT_NOT_DRAW_CARD = 4,
-            ACTION_RESULT_INVALID = 5
+            ACTION_RESULT_NEED_COLOR = 5,
+            ACTION_RESULT_INVALID = 6
         }
 
         /** CardColor enum. */
         enum CardColor {
-            COLOR_RED = 0,
-            COLOR_YELLOW = 16,
-            COLOR_BLUE = 32,
-            COLOR_GREEN = 48
+            COLOR_WILD = 0,
+            COLOR_RED = 16,
+            COLOR_YELLOW = 32,
+            COLOR_BLUE = 48,
+            COLOR_GREEN = 64
         }
 
         /** PlayerStatus enum. */
@@ -920,6 +922,12 @@ export namespace proto {
             /** TableState clockwise */
             clockwise?: (boolean|null);
 
+            /** TableState color */
+            color?: (number|null);
+
+            /** TableState challengeColor */
+            challengeColor?: (number|null);
+
             /** TableState lastPlayer */
             lastPlayer?: (number|Long|null);
 
@@ -959,6 +967,12 @@ export namespace proto {
 
             /** TableState clockwise. */
             public clockwise: boolean;
+
+            /** TableState color. */
+            public color: number;
+
+            /** TableState challengeColor. */
+            public challengeColor: number;
 
             /** TableState lastPlayer. */
             public lastPlayer: (number|Long);
@@ -1234,6 +1248,9 @@ export namespace proto {
 
             /** C2SActionReq card */
             card?: (Uint8Array|null);
+
+            /** C2SActionReq color */
+            color?: (number|null);
         }
 
         /** Represents a C2SActionReq. */
@@ -1250,6 +1267,9 @@ export namespace proto {
 
             /** C2SActionReq card. */
             public card: Uint8Array;
+
+            /** C2SActionReq color. */
+            public color: number;
 
             /**
              * Creates a new C2SActionReq instance using the specified properties.
@@ -1429,6 +1449,12 @@ export namespace proto {
 
             /** SingleEvent card */
             card?: (Uint8Array|null);
+
+            /** SingleEvent clockwise */
+            clockwise?: (boolean|null);
+
+            /** SingleEvent color */
+            color?: (number|null);
         }
 
         /** Represents a SingleEvent. */
@@ -1448,6 +1474,12 @@ export namespace proto {
 
             /** SingleEvent card. */
             public card: Uint8Array;
+
+            /** SingleEvent clockwise. */
+            public clockwise: boolean;
+
+            /** SingleEvent color. */
+            public color: number;
 
             /**
              * Creates a new SingleEvent instance using the specified properties.

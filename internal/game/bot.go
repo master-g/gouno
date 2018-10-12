@@ -122,12 +122,9 @@ func parse(body []byte, msg proto.Message) error {
 	return err
 }
 
-func solve(cards []uint8, match uint8) (index int, color uint8) {
+func solve(cards []uint8, matchColor, matchValue uint8) (index int, color uint8) {
 	index = -1
 	color = uno.ColorRed
-
-	matchValue := uno.CardValue(match)
-	matchColor := uno.CardColor(match)
 
 	colorCount := make(map[uint8]int)
 	colorMaxCount := 0
@@ -141,7 +138,7 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 	for i, c := range cards {
 		r := uno.CardColor(c)
 		v := uno.CardValue(c)
-		if v != uno.ValueWild && v != uno.ValueWildDraw4 {
+		if r != uno.ColorWild {
 			colorCount[r]++
 			if colorCount[r] > colorMaxCount {
 				colorMaxCount = colorCount[r]
@@ -203,12 +200,12 @@ func solve(cards []uint8, match uint8) (index int, color uint8) {
 	return
 }
 
-func ai(t *Table, bot *Client) {
+func ai(t *Table, client *Client) {
 	log.Info(botFace+"AI kicks in for", zap.Uint64("uid", t.CurrentPlayer))
 
-	state, ok := t.stateMap[bot.UID]
+	state, ok := t.stateMap[client.UID]
 	if !ok {
-		log.Error(botFace+"unable to find state of uid", zap.Uint64("uid", bot.UID))
+		log.Error(botFace+"unable to find state of uid", zap.Uint64("uid", client.UID))
 		return
 	}
 
@@ -220,10 +217,12 @@ func ai(t *Table, bot *Client) {
 
 	// what is last card
 	lastCard := t.Discard[len(t.Discard)-1]
+	currentColor := t.Color
 
-	log.Debug(botFace+"last card is", zap.String("card", uno.CardToString(lastCard)))
+	log.Debug(botFace+"last card", zap.String("card", uno.CardToString(lastCard)), zap.String("color", uno.KolorToString(currentColor)))
 
 	var cardToPlay uint8
+	var kolorToPlay uint8
 
 	if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_CHALLENGE)) {
 		// wild draw 4 and offered chance to challenge
@@ -236,20 +235,22 @@ func ai(t *Table, bot *Client) {
 		drawCardValue := uno.CardValue(drawCard)
 		if drawCardValue == uno.ValueWildDraw4 {
 			// try to find solution in old cards
-			idx, maxColor := solve(state.Cards[:len(state.Cards)-1], lastCard)
+			idx, maxColor := solve(state.Cards[:len(state.Cards)-1], currentColor, uno.CardValue(lastCard))
 			if idx >= 0 {
 				// keep it to prevent challenge
 				log.Debug(botFace + "wow, I don't want to bluff a wild draw 4, I will keep")
 				action.Action = int32(pb.Action_ACTION_KEEP)
 			} else {
 				log.Debug(botFace + "legal wild draw 4, have at you!")
-				cardToPlay = uno.CardMake(maxColor, uno.ValueWildDraw4)
+				cardToPlay = uno.CardMake(uno.ColorWild, uno.ValueWildDraw4)
+				kolorToPlay = maxColor
 			}
 		} else {
-			idx, maxColor := solve([]uint8{drawCard}, lastCard)
+			idx, maxColor := solve([]uint8{drawCard}, currentColor, uno.CardValue(lastCard))
 			if idx >= 0 {
 				if drawCardValue == uno.ValueWild {
-					cardToPlay = uno.CardMake(maxColor, uno.ValueWild)
+					cardToPlay = uno.CardMake(uno.ColorWild, uno.ValueWild)
+					kolorToPlay = maxColor
 				} else {
 					cardToPlay = drawCard
 				}
@@ -260,11 +261,12 @@ func ai(t *Table, bot *Client) {
 			}
 		}
 	} else {
-		idx, maxColor := solve(state.Cards, lastCard)
+		idx, maxColor := solve(state.Cards, currentColor, uno.CardValue(lastCard))
 		if idx >= 0 {
 			cardToPlay = state.Cards[idx]
 			if uno.CardValue(cardToPlay) == uno.ValueWild || uno.CardValue(cardToPlay) == uno.ValueWildDraw4 {
-				cardToPlay = uno.CardMake(maxColor, uno.CardValue(cardToPlay))
+				cardToPlay = uno.CardMake(uno.ColorWild, uno.CardValue(cardToPlay))
+				kolorToPlay = maxColor
 			}
 		} else {
 			action.Action = int32(pb.Action_ACTION_DRAW)
@@ -272,13 +274,14 @@ func ai(t *Table, bot *Client) {
 	}
 
 	if cardToPlay != 0 {
-		log.Debug(botFace+"finish AI with solution", zap.String("card", uno.CardToString(cardToPlay)))
+		log.Debug(botFace+"finish AI with solution", zap.String("card", uno.CardToString(cardToPlay)), zap.String("color", uno.KolorToString(kolorToPlay)))
 		if len(state.Cards) == 2 {
 			action.Action = int32(pb.Action_ACTION_UNO_PLAY)
 		} else {
 			action.Action = int32(pb.Action_ACTION_PLAY)
 		}
 		action.Card = append(action.Card, cardToPlay)
+		action.Color = int32(kolorToPlay)
 	} else {
 		actionEnum := pb.Action(action.Action)
 		log.Debug(botFace+"finish AI with no card", zap.String("action", actionEnum.String()))
@@ -295,7 +298,7 @@ func ai(t *Table, bot *Client) {
 	}
 
 	select {
-	case bot.In <- *event:
+	case client.In <- *event:
 	default:
 	}
 }

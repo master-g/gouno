@@ -119,6 +119,13 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 		body.Result = int32(pb.ActionResult_ACTION_RESULT_CARD_NOT_EXIST)
 		return
 	}
+	// wild card must have non wild color
+	if !isColorValidForWildCard(action.Card[0], uint8(action.Color)) {
+		result.Msg = "must specify color while play wild"
+		result.Status = int32(pb.StatusCode_STATUS_INVALID)
+		body.Result = int32(pb.ActionResult_ACTION_RESULT_NEED_COLOR)
+		return
+	}
 
 	if state.IsFlagSet(int32(pb.PlayerStatus_STATUS_DRAW)) {
 		// player draw card from deck
@@ -139,6 +146,13 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	discardTop := t.Discard[len(t.Discard)-1]
 	discardTopValue := uno.CardValue(discardTop)
 	discardTopColor := uno.CardColor(discardTop)
+	if actionColor == uno.ColorWild {
+		actionColor = uint8(action.Color)
+	}
+	if discardTopColor == uno.ColorWild {
+		discardTopColor = t.Color
+	}
+
 	if !t.DeckRecycled && len(t.Discard) == 1 && discardTopValue == uno.ValueWild {
 		// the first card of the table is wild, player can play any card
 	} else if actionValue == uno.ValueWild || actionValue == uno.ValueWildDraw4 {
@@ -206,6 +220,7 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 
 	if actionValue == uno.ValueWildDraw4 {
 		// wild draw 4
+		t.ChallengeColor = discardTopColor
 		nextState := t.stateMap[nextPlayerUID]
 		nextState.SetFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
 	}
@@ -237,6 +252,7 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 
 	// there might be re-shuffle before, so put card in discard pile here
 	t.Discard = append(t.Discard, actionCard)
+	t.Color = actionColor
 
 	// check for game over
 	if len(state.Cards) == 0 {
@@ -247,6 +263,10 @@ func handlePlay(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 			Event: int32(pb.Event_EVENT_TURN),
 		})
 	}
+
+	// additional info for PLAY
+	playEvent.Color = int32(t.Color)
+	playEvent.Clockwise = t.Clockwise
 
 	// reset timeout
 	state.Timeout = false
@@ -323,7 +343,7 @@ func handleChallenge(t *Table, action pb.C2SActionReq, state *PlayerState, body 
 	for _, c := range lastPlayer.Cards {
 		cardValue := uno.CardValue(c)
 		cardColor := uno.CardColor(c)
-		if cardValue == uno.ValueWild || cardColor == uno.CardColor(prevCard) || cardValue == uno.CardValue(prevCard) {
+		if cardValue == uno.ValueWild || cardColor == t.ChallengeColor || cardValue == uno.CardValue(prevCard) {
 			penalty = true
 			break
 		}
@@ -369,7 +389,8 @@ func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb
 		return
 	}
 
-	drawCards(t, state.UID, uno.CardCount4, result)
+	cards := drawCards(t, state.UID, uno.CardCount4, result)
+	state.Cards = append(state.Cards, cards...)
 	t.CurrentPlayer = t.nextPlayer()
 
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
@@ -382,6 +403,19 @@ func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb
 
 	state.Timeout = false
 	t.TimeLeft = t.Timeout
+}
+
+func isColorValidForWildCard(card, color uint8) bool {
+	if uno.CardValue(card) == uno.ValueWild || uno.CardValue(card) == uno.ValueWildDraw4 {
+		if color != uno.ColorRed &&
+			color != uno.ColorYellow &&
+			color != uno.ColorBlue &&
+			color != uno.ColorGreen {
+			return false
+		}
+	}
+
+	return true
 }
 
 // helper function

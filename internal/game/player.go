@@ -61,24 +61,13 @@ func NewPlayerState(uid uint64) *PlayerState {
 }
 
 // CardIndex return index of the card, if not exist, -1 will be returned
-func (p PlayerState) CardIndex(card uint8) (index int) {
-	index = -1
-	wild := false
-	value := uno.CardValue(card)
-	if value == uno.ValueWildDraw4 || value == uno.ValueWild {
-		color := uno.CardColor(card)
-		if color != uno.ColorRed && color != uno.ColorYellow && color != uno.ColorBlue && color != uno.ColorGreen {
-			return
-		}
-		wild = true
-	}
+func (p PlayerState) CardIndex(card uint8) int {
 	for i, v := range p.Cards {
-		if (wild && uno.CardValue(v) == value) || v == card {
-			index = i
-			break
+		if v == card {
+			return i
 		}
 	}
-	return
+	return -1
 }
 
 // HideCardsForUID will hide other player's cards for player with given uid
