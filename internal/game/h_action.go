@@ -284,8 +284,6 @@ func handleDraw(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb.S
 	body.Card = make([]uint8, 1)
 	body.Card[0] = card[0]
 
-	state.Cards = append(state.Cards, card[0])
-
 	// reset timeout
 	state.Timeout = false
 	t.TimeLeft = t.Timeout
@@ -393,8 +391,7 @@ func handleAccept(t *Table, action pb.C2SActionReq, state *PlayerState, body *pb
 		return
 	}
 
-	cards := drawCards(t, state.UID, uno.CardCount4, result)
-	state.Cards = append(state.Cards, cards...)
+	drawCards(t, state.UID, uno.CardCount4, result)
 	t.CurrentPlayer = t.nextPlayer()
 
 	state.ClearFlag(int32(pb.PlayerStatus_STATUS_CHALLENGE))
@@ -436,6 +433,9 @@ func drawCards(t *Table, uid uint64, num int, result *HandleResult) []uint8 {
 		Card:  make([]uint8, num),
 	}
 	copy(drawEvent.Card, card)
+
+	state := t.stateMap[uid]
+	state.Cards = append(state.Cards, card...)
 
 	result.Events = append(result.Events, drawEvent)
 

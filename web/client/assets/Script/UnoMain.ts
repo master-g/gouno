@@ -27,6 +27,9 @@ export default class UnoMain extends cc.Component {
     // TODO: move selfCards to a component
     private selfCards: UnoCard[] = [];
 
+    // TODO: move opponentCards to a component
+    private opponentCards: UnoCard[] = [];
+
     heartbeatHandler: number = -1;
 
     onLoad() {
@@ -113,14 +116,16 @@ export default class UnoMain extends cc.Component {
 
                         const card = event.card[0];
                         if (!isSelf) {
-                            this.dealCard(card);
+                            this.playOpponentCard(card);
                             // move card from other player
                         } else {
                             this.playSelfCard(card);
                         }
                     } else if (what == proto.game.Event.EVENT_DRAW) {
                         if (isSelf) {
-                            this.selfDrawCards(event.card);
+                            this.drawSelfCards(event.card);
+                        } else {
+                            this.drawOpponentCards(event.card.length);
                         }
                     }
                 }
@@ -175,6 +180,7 @@ export default class UnoMain extends cc.Component {
         }
         this.allOfTheCards = [];
         this.selfCards = [];
+        this.opponentCards = [];
     }
 
     clearSelfCards(): void {
@@ -202,7 +208,7 @@ export default class UnoMain extends cc.Component {
         this.repositionSelfCards();
     }
 
-    selfDrawCards(cards: number[]): void {
+    drawSelfCards(cards: number[]): void {
         for (let i = 0; i < cards.length; i++) {
             const c = this.addCardToPos(cards[i], -320, 420);
             this.selfCards.push(c);
@@ -211,23 +217,10 @@ export default class UnoMain extends cc.Component {
     }
 
     playSelfCard(card: number): void {
-        let found = false;
-
         for (let i = this.selfCards.length - 1; i >= 0; i--) {
             const unoCard = this.selfCards[i];
             const value = UNO.getValue(card);
-            if (
-                unoCard.value == Card.VALUE_WILD ||
-                unoCard.value == Card.VALUE_WILD_DRAW_4
-            ) {
-                if (value == unoCard.value) {
-                    found = true;
-                }
-            } else if (card == unoCard.card) {
-                found = true;
-            }
-
-            if (!found) {
+            if (card != unoCard.card) {
                 continue;
             }
 
@@ -242,11 +235,9 @@ export default class UnoMain extends cc.Component {
             unoCard.node.runAction(cc.rotateBy(duration, rot));
             unoCard.node.runAction(cc.moveTo(duration, cc.v2(x, y)));
             this.selfCards.splice(i, 1);
-            break;
-        }
 
-        if (found) {
             this.repositionSelfCards();
+            return;
         }
     }
 
@@ -272,14 +263,83 @@ export default class UnoMain extends cc.Component {
         }
     }
 
+    clearOpponentCards(): void {
+        this.opponentCards.forEach(c => {
+            c.node.removeFromParent();
+            this.allOfTheCards.splice(this.allOfTheCards.indexOf(c), 1);
+        });
+        this.opponentCards = [];
+    }
+
+    setOpponentCards(count: number): void {
+        this.clearOpponentCards();
+
+        for (let i = 0; i < count; i++) {
+            const card = this.addCardToPos(0, 0, 0);
+            this.opponentCards.push(card);
+        }
+        this.repositionOpponentCards();
+    }
+
+    drawOpponentCards(count: number): void {
+        for (let i = 0; i < count; i++) {
+            const card = this.addCardToPos(0, -300, 0);
+            this.opponentCards.push(card);
+        }
+        this.repositionOpponentCards();
+    }
+
+    playOpponentCard(card: number): void {
+        const unoCard = this.opponentCards[this.opponentCards.length - 1];
+        unoCard.node.zIndex = this.cardZOrder;
+        this.cardZOrder++;
+
+        unoCard.SetCard(card);
+        unoCard.node.stopAllActions();
+        const x = cc.randomMinus1To1() * 40;
+        const y = cc.randomMinus1To1() * 40;
+        const rot = cc.randomMinus1To1() * 180;
+        const duration = 0.6;
+        unoCard.node.runAction(cc.rotateBy(duration, rot));
+        unoCard.node.runAction(cc.moveTo(duration, cc.v2(x, y)));
+        this.opponentCards.splice(this.opponentCards.length - 1, 1);
+
+        this.repositionSelfCards();
+    }
+
+    repositionOpponentCards(): void {
+        if (this.opponentCards.length == 0) {
+            return;
+        }
+
+        const d = 10;
+        let startDeg = 90;
+        const cardCount = this.opponentCards.length;
+
+        if (cardCount % 2 == 1) {
+            startDeg = 90 + Math.floor(cardCount / 2) * -d;
+        } else {
+            startDeg = 90 + (-(cardCount - 1) * d) / 2;
+        }
+
+        for (let i = 0; i < cardCount; i++) {
+            const card = this.opponentCards[i];
+            card.node.stopAllActions();
+            card.node.runAction(cc.rotateTo(0.6, startDeg + d * i));
+            card.node.runAction(cc.moveTo(0.6, cc.v2(-300, 0)));
+        }
+    }
+
     setPlayers(players: any[]) {
         if (!players || players.length == 0) {
-            // TODO: clear player
+            // TODO: clear player`
             return;
         }
         players.forEach((p, i) => {
             if (p.uid == ProtoMessage.uid) {
                 this.setSelfCards(p.cards);
+            } else {
+                this.setOpponentCards(p.cards.length);
             }
         });
     }

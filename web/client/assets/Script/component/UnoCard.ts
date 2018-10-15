@@ -29,7 +29,9 @@ export default class UnoCard extends cc.Component {
         }
 
         let frameIndex = "back";
-        if (this.value == Card.VALUE_WILD) {
+        if (this.card == 0) {
+            // default
+        } else if (this.value == Card.VALUE_WILD) {
             frameIndex = "w";
         } else if (this.value == Card.VALUE_WILD_DRAW_4) {
             frameIndex = "wd4";

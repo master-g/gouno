@@ -124,7 +124,7 @@ func parse(body []byte, msg proto.Message) error {
 
 func solve(cards []uint8, matchColor, matchValue uint8) (index int, color uint8) {
 	index = -1
-	color = uno.ColorRed
+	color = matchColor
 
 	colorCount := make(map[uint8]int)
 	colorMaxCount := 0
@@ -178,6 +178,7 @@ func solve(cards []uint8, matchColor, matchValue uint8) (index int, color uint8)
 		// find color
 		if len(colorMatched) > 0 {
 			index = findMinValue(cards, colorMatched)
+			color = matchColor
 		}
 	} else {
 		// find value
@@ -186,6 +187,10 @@ func solve(cards []uint8, matchColor, matchValue uint8) (index int, color uint8)
 		} else if len(colorMatched) > 0 {
 			index = findMinValue(cards, colorMatched)
 		}
+	}
+
+	if index >= 0 {
+		color = uno.CardColor(cards[index])
 	}
 
 	if index < 0 && len(wilds) > 0 {
