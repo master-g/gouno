@@ -1,5 +1,3 @@
-// FIXME: there might be some issues with reverse card
-
 const { ccclass, property } = cc._decorator;
 
 import L from "./base/log/Log";
