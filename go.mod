@@ -22,3 +22,5 @@ require (
 	golang.org/x/sys v0.0.0-20180927150500-dad3d9fb7b6e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
+
+go 1.13

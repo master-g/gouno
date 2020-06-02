@@ -85,10 +85,11 @@ message C2SAction {
 }
 
 message S2CEventNty {
-    fixed64 uid        = 1; // player uid
-    int32   event      = 2; // action
-    int32   wild_color = 3; // player play wild and select next play color
-    bytes   card       = 4; // cards involved
+    int32   event      = 1; // action
+    fixed64 uid        = 2; // player uid
+    bool uno = 3; // player play and yield UNO!
+    int32   wild_color = 4; // player play wild and select next play color
+    bytes   card       = 5; // cards involved
 }
 
 message S2CGameOverNty {
